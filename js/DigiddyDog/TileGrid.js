@@ -1,12 +1,13 @@
 // Represents a grid of tiles.
-tj.DigiddyDog.TileGrid = function(gridCenterX, gridCenterY, levelInfo) {
+tj.DigiddyDog.TileGrid = function(levelInfo) {
   var i = 0;
 
   this.rows = [];
   this.swapRows = [];
+  this.cellSize = 0;
   this.gridBuffer = null;
   this.levelInfo = levelInfo;
-  this.origin = {x: gridCenterX, y: gridCenterY, width: 0, height: 0};
+  this.origin = {x: 0, y: 0, width: 0, height: 0};
   this.gravity = {x: 0, y: 1};
   this.pattern = null;
   this.patternStamp = new tj.DigiddyDog.Tile(tj.DD.constants.TYPE.GEM, 0, 0, 0, 0, 'r');
@@ -30,6 +31,11 @@ tj.DigiddyDog.TileGrid = function(gridCenterX, gridCenterY, levelInfo) {
 };
 
 // Prototype Functions ////////////////////////////////////////////////////////
+tj.DigiddyDog.TileGrid.prototype.setOrigin = function(x, y) {
+  this.origin.x = x;
+  this.origin.y = y;
+};
+
 tj.DigiddyDog.TileGrid.prototype.isAcceptingUserInput = function() {
   return this.update === this.updateDefault && !this.bPlayerKilled && !this.rotInfo.bWantsRotate;
 };
@@ -234,15 +240,34 @@ tj.DigiddyDog.TileGrid.prototype.draw = function(gfx) {
 
 tj.DigiddyDog.TileGrid.prototype.drawPattern = function(gfx, left, top) {
   var i = 0,
-      x = this.pattern ? Math.round(this.origin.x - this.pattern.length * 0.5 * tj.DD.constants.CELL_SIZE_PX + tj.DD.constants.CELL_SIZE_PX * 0.5) : this.origin.x,
-      y = Math.round(this.origin.y - this.origin.height * 0.5 - tj.DD.constants.BORDER_WIDTH - tj.DD.constants.CELL_SIZE_PX * 0.6);
+      x = this.origin.x + Math.round(this.origin.width * 0.5);
+      y = this.origin.y - Math.round(this.origin.height * 0.5);
+      width = tj.Graphics.width() - x,
+      cellSize = this.computeCellSize(width / this.pattern.length);
+
+  x = x + Math.round(width * 0.5 - cellSize * this.pattern.length * 0.5);
+  width = cellSize * this.pattern.length;
 
   if (gfx && this.pattern) {
+    gfx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    gfx.strokeStyle = "white";
+    gfx.lineWidth = Math.round(tj.DD.constants.BORDER_WIDTH * 0.5);
+    gfx.beginPath();
+    gfx.rect(x, y, width, 2 * cellSize);
+    gfx.closePath();
+    gfx.fill();
+    gfx.stroke();
+
+    y += Math.round(cellSize * 0.33);
+    tj.Graphics.print(gfx, tj.DD.strings.PATTERN, x + Math.round(width * 0.5), y, "white", tj.DD.constants.DROP_TEXT_OFFSET);
+    y += cellSize;
+    x += Math.round(cellSize * 0.5);
+
     for (i=0; i<this.pattern.length; ++i) {
       this.patternStamp.setPos(x, y);
       this.patternStamp.setColor(this.pattern.charAt(i));
-      this.patternStamp.draw(gfx);
-      x += tj.DD.constants.CELL_SIZE_PX;
+      this.patternStamp.draw(gfx, cellSize);
+      x += cellSize;
     }
   }
 };
@@ -270,7 +295,7 @@ tj.DigiddyDog.TileGrid.prototype.drawGridBuffer = function() {
             playerTile = this.rows[iRow][iCol].tile;
           }
           else {
-            this.rows[iRow][iCol].tile.draw(gfx);
+            this.rows[iRow][iCol].tile.draw(gfx, this.cellSize);
           }
         }
 
@@ -283,12 +308,12 @@ tj.DigiddyDog.TileGrid.prototype.drawGridBuffer = function() {
 
     // Draw the player.
     if (playerTile) {
-      playerTile.draw(gfx);
+      playerTile.draw(gfx, this.cellSize);
     }
 
     // Draw the path.
     for (i=0; i<nPathCells; ++i) {
-      this.pathCells[i].path.draw(gfx, this.pathCells[i].pathIndex);
+      this.pathCells[i].path.draw(gfx, this.pathCells[i].pathIndex, this.cellSize);
     }
 
     // Draw frame.
@@ -324,7 +349,9 @@ tj.DigiddyDog.TileGrid.prototype.buildLevel = function(levelInfo) {
   pattern = this.levelInfo ? this.levelInfo.pattern || pattern : pattern;
   bRandomLevel = this.levelInfo ? this.levelInfo.bRandomLevel || false : true;
   nSolidRocks = this.levelInfo ? this.levelInfo.solidRocks || 0 : 0;
+
   this.createGridBuffer(rows, cols);
+
   this.pattern = pattern;
 
   if (bRandomLevel) {
@@ -668,31 +695,71 @@ tj.DigiddyDog.TileGrid.prototype.getOrigin = function() {
 };
 
 tj.DigiddyDog.TileGrid.prototype.xLocalFromCol = function(col) {
-  return Math.round(tj.DD.constants.BORDER_WIDTH + tj.DD.constants.CELL_SIZE_PX * 0.5) +
-         col * (tj.DD.constants.BORDER_WIDTH + tj.DD.constants.CELL_SIZE_PX);
+  return Math.round(tj.DD.constants.BORDER_WIDTH + this.cellSize * 0.5) +
+         col * (tj.DD.constants.BORDER_WIDTH + this.cellSize);
 };
 
 tj.DigiddyDog.TileGrid.prototype.yLocalFromRow = function(row) {
-  return Math.round(tj.DD.constants.BORDER_WIDTH + tj.DD.constants.CELL_SIZE_PX * 0.5) +
-         row * (tj.DD.constants.BORDER_WIDTH + tj.DD.constants.CELL_SIZE_PX);
+  return Math.round(tj.DD.constants.BORDER_WIDTH + this.cellSize * 0.5) +
+         row * (tj.DD.constants.BORDER_WIDTH + this.cellSize);
 };
 
 tj.DigiddyDog.TileGrid.prototype.xFromCol = function(col) {
   return this.origin.x - Math.round(this.origin.width * 0.5) +
-         Math.round(tj.DD.constants.BORDER_WIDTH + tj.DD.constants.CELL_SIZE_PX * 0.5) +
-         col * (tj.DD.constants.BORDER_WIDTH + tj.DD.constants.CELL_SIZE_PX);
+         Math.round(tj.DD.constants.BORDER_WIDTH + this.cellSize * 0.5) +
+         col * (tj.DD.constants.BORDER_WIDTH + this.cellSize);
 };
 
 tj.DigiddyDog.TileGrid.prototype.yFromRow = function(row) {
   return this.origin.y - Math.round(this.origin.height * 0.5) +
-         Math.round(tj.DD.constants.BORDER_WIDTH + tj.DD.constants.CELL_SIZE_PX * 0.5) +
-         row * (tj.DD.constants.BORDER_WIDTH + tj.DD.constants.CELL_SIZE_PX);
+         Math.round(tj.DD.constants.BORDER_WIDTH + this.cellSize * 0.5) +
+         row * (tj.DD.constants.BORDER_WIDTH + this.cellSize);
+};
+
+tj.DigiddyDog.TileGrid.prototype.getCellSize = function() {
+  return this.cellSize;
+};
+
+tj.DigiddyDog.TileGrid.prototype.computeCellSize = function(desiredSize) {
+  var cellSize = desiredSize;
+
+  if (cellSize >= tj.DD.constants.CELL_SIZE_PX.DESIRED) {
+    cellSize = tj.DD.constants.CELL_SIZE_PX.DESIRED;
+  }
+  else if (cellSize >= tj.DD.constants.CELL_SIZE_PX.LARGE) {
+    cellSize = tj.DD.constants.CELL_SIZE_PX.LARGE;
+  }
+  else if (cellSize > tj.DD.constants.CELL_SIZE_PX.MEDIUM) {
+    cellSize = tj.DD.constants.CELL_SIZE_PX.MEDIUM;
+  }
+  else {
+    cellSize = tj.DD.constants.CELL_SIZE_PX.SMALL;
+  }
+
+  return cellSize;
 };
 
 tj.DigiddyDog.TileGrid.prototype.createGridBuffer = function(rows, cols) {
-  this.origin.width = cols * (tj.DD.constants.CELL_SIZE_PX + tj.DD.constants.BORDER_WIDTH) + tj.DD.constants.BORDER_WIDTH;
-  this.origin.height = rows * (tj.DD.constants.CELL_SIZE_PX + tj.DD.constants.BORDER_WIDTH) + tj.DD.constants.BORDER_WIDTH;
-  this.gridBuffer = tj.Graphics.newBuffer(this.origin.width, this.origin.height)
+  var xScale = 1,
+      yScale = 1,
+      cellSize = 1,
+      scale = 1;
+
+  this.origin.width = cols * (tj.DD.constants.CELL_SIZE_PX.DESIRED + tj.DD.constants.BORDER_WIDTH) + tj.DD.constants.BORDER_WIDTH;
+  this.origin.height = rows * (tj.DD.constants.CELL_SIZE_PX.DESIRED + tj.DD.constants.BORDER_WIDTH) + tj.DD.constants.BORDER_WIDTH;
+
+  xScale = tj.Graphics.width() * tj.DD.constants.MARGIN_SCALE / this.origin.width;
+  yScale = tj.Graphics.height() * tj.DD.constants.MARGIN_SCALE / this.origin.height;
+
+  scale = Math.min(xScale, yScale);
+  scale = Math.min(scale, 1.0);
+
+  this.cellSize = this.computeCellSize(tj.DD.constants.CELL_SIZE_PX.DESIRED * scale);
+  
+  this.origin.width = cols * (this.cellSize + tj.DD.constants.BORDER_WIDTH) + tj.DD.constants.BORDER_WIDTH;
+  this.origin.height = rows * (this.cellSize + tj.DD.constants.BORDER_WIDTH) + tj.DD.constants.BORDER_WIDTH;
+
+  this.gridBuffer = tj.Graphics.newBuffer(this.origin.width, this.origin.height);
 };
 
 tj.DigiddyDog.TileGrid.prototype.width = function() {

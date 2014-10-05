@@ -94,51 +94,51 @@ tj.DigiddyDog.Tile.prototype.setGridDest = function(row, col) {
   this.dest.col = col;
 };
 
-tj.DigiddyDog.Tile.prototype.drawGem = function(gfx) {
+tj.DigiddyDog.Tile.prototype.drawGem = function(gfx, cellSize) {
   gfx.fillStyle = this.colorMap[this.color] || tj.DD.constants.MISSING_COLOR;
   gfx.beginPath();
-  gfx.moveTo(this.x, this.y - Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5));
-  gfx.lineTo(this.x + Math.round(tj.DD.constants.CELL_SIZE_PX * 0.25), this.y);
-  gfx.lineTo(this.x, this.y + Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5));
-  gfx.lineTo(this.x - Math.round(tj.DD.constants.CELL_SIZE_PX * 0.25), this.y);
+  gfx.moveTo(this.x, this.y - Math.round(cellSize * 0.5));
+  gfx.lineTo(this.x + Math.round(cellSize * 0.25), this.y);
+  gfx.lineTo(this.x, this.y + Math.round(cellSize * 0.5));
+  gfx.lineTo(this.x - Math.round(cellSize * 0.25), this.y);
   gfx.closePath();
   gfx.fill();
 };
 
-tj.DigiddyDog.Tile.prototype.drawDog = function(gfx) {
+tj.DigiddyDog.Tile.prototype.drawDog = function(gfx, cellSize) {
   gfx.fillStyle = this.colorMap[this.color] || tj.DD.constants.MISSING_COLOR;
   gfx.strokeStyle = "#444444";
   gfx.lineWidth = 2;
   gfx.beginPath();
-  gfx.arc(this.x, this.y, Math.round(tj.DD.constants.CELL_SIZE_PX * 0.4), 0, 2 * Math.PI, true);
+  gfx.arc(this.x, this.y, Math.round(cellSize * 0.4), 0, 2 * Math.PI, true);
   gfx.closePath();
   gfx.fill();
   gfx.stroke();
 };
 
-tj.DigiddyDog.Tile.prototype.drawRock = function(gfx) {
+tj.DigiddyDog.Tile.prototype.drawRock = function(gfx, cellSize) {
   gfx.fillStyle = this.colorMap[this.color] || tj.DD.constants.MISSING_COLOR;
   gfx.strokeStyle = "#aaaaaa";
   gfx.lineWidth = 2;
   gfx.beginPath();
-  gfx.moveTo(this.x - Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5 * 0.9), this.y + Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5 * 0.9));
-  gfx.lineTo(this.x + Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5 * 0.9), this.y + Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5 * 0.9));
-  gfx.lineTo(this.x + Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5 * 0.5), this.y - Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5 * 0.1));
-  gfx.lineTo(this.x - Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5 * 0.5), this.y - Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5 * 0.1));
+  gfx.moveTo(this.x - Math.round(cellSize * 0.5 * 0.9), this.y + Math.round(cellSize * 0.5 * 0.9));
+  gfx.lineTo(this.x + Math.round(cellSize * 0.5 * 0.9), this.y + Math.round(cellSize * 0.5 * 0.9));
+  gfx.lineTo(this.x + Math.round(cellSize * 0.5 * 0.5), this.y - Math.round(cellSize * 0.5 * 0.1));
+  gfx.lineTo(this.x - Math.round(cellSize * 0.5 * 0.5), this.y - Math.round(cellSize * 0.5 * 0.1));
   gfx.closePath();
   gfx.fill();
   gfx.stroke();
 };
 
-tj.DigiddyDog.Tile.prototype.drawSolidRock = function(gfx) {
+tj.DigiddyDog.Tile.prototype.drawSolidRock = function(gfx, cellSize) {
   gfx.fillStyle = this.colorMap[this.color] || tj.DD.constants.MISSING_COLOR;
   gfx.strokeStyle = "#ffffff";
   gfx.lineWidth = 2;
   gfx.beginPath();
-  gfx.moveTo(this.x - Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5 * 0.67), this.y + Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5 * 0.9));
-  gfx.lineTo(this.x + Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5 * 0.67), this.y + Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5 * 0.9));
-  gfx.lineTo(this.x + Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5 * 0.67), this.y - Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5 * 0.4));
-  gfx.lineTo(this.x - Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5 * 0.67), this.y - Math.round(tj.DD.constants.CELL_SIZE_PX * 0.5 * 0.4));
+  gfx.moveTo(this.x - Math.round(cellSize * 0.5 * 0.67), this.y + Math.round(cellSize * 0.5 * 0.9));
+  gfx.lineTo(this.x + Math.round(cellSize * 0.5 * 0.67), this.y + Math.round(cellSize * 0.5 * 0.9));
+  gfx.lineTo(this.x + Math.round(cellSize * 0.5 * 0.67), this.y - Math.round(cellSize * 0.5 * 0.4));
+  gfx.lineTo(this.x - Math.round(cellSize * 0.5 * 0.67), this.y - Math.round(cellSize * 0.5 * 0.4));
   gfx.closePath();
   gfx.fill();
   gfx.stroke();

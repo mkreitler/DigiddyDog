@@ -26,14 +26,14 @@ tj.DigiddyDog.StateLevelTest = function(gameIn) {
       ],
       statusMessage = null,
       levelInfo = [
+        {rows: 10, cols: 10, pattern: "rgbypo", solidRocks: 0, bRandomLevel: true},
         {rows: 3, cols: 3, pattern: "rrrr", solidRocks: 0, bRandomLevel: true},
         {rows: 3, cols: 3, pattern: "rggr", solidRocks: 0, bRandomLevel: true},
         {rows: 3, cols: 3, pattern: "gbrr", solidRocks: 0, bRandomLevel: true},
         {rows: 3, cols: 3, pattern: "ygbr", solidRocks: 0, bRandomLevel: true},
         {rows: 6, cols: 6, pattern: "rgby", solidRocks: 0, bRandomLevel: true},
         {rows: 6, cols: 6, pattern: "bgry", solidRocks: 1, bRandomLevel: true},
-        {rows: 12, cols: 12, pattern: "bgry", solidRocks: 2, bRandomLevel: true},
-        {rows: 12, cols: 12, pattern: "rgbypo", solidRocks: 0, bRandomLevel: true},
+        {rows: 10, cols: 10, pattern: "bgry", solidRocks: 2, bRandomLevel: true},
       ];
       levelIndex = 0;
 
@@ -55,17 +55,18 @@ tj.DigiddyDog.StateLevelTest = function(gameIn) {
   };
 
   this.enter = function() {
+    tileGrid = new tj.DigiddyDog.TileGrid(levelInfo[levelIndex]);
+
     if (!backBuffer) {
       backBuffer = gameIn.createBackBuffer();
-      gameIn.drawBackBufferBackground();
+      tj.Game.sendMessage(tj.Game.MESSAGES.CREATE_BACKGROUND, tileGrid.getCellSize());
 
       backBufferLeft = 0;
       backBufferTop = Math.round(tj.Graphics.height() * 0.5 - backBuffer.height * 0.5);
     }
 
-    tileGrid = new tj.DigiddyDog.TileGrid(backBufferLeft + Math.round(backBuffer.width * 0.5),
-                                          backBufferTop + Math.round(backBuffer.height * 0.5),
-                                          levelInfo[levelIndex]);
+    tileGrid.setOrigin(backBufferLeft + Math.round(backBuffer.width * 0.5),
+                       backBufferTop + Math.round(backBuffer.height * 0.5));
 
     statusMessage = tj.DD.strings.LEVEL_PREFIX + " " + (levelIndex + 1) + " " + tj.DD.strings.READY + "!";
 
@@ -74,7 +75,7 @@ tj.DigiddyDog.StateLevelTest = function(gameIn) {
 
     if (!tj.MusicMixer.isPlaying()) {
       tj.MusicMixer.randomize(true);
-      tj.MusicMixer.start();
+      // tj.MusicMixer.start();
     }
   };
 
@@ -123,9 +124,19 @@ tj.DigiddyDog.StateLevelTest = function(gameIn) {
 
       gfx.translate(rotIconPos.x, rotIconPos.y);
 
-      if (!(rotIconPos.x < gridTopLeft.x)) {
+      if (!rotInfo.bBottomRot && !(rotIconPos.x < gridTopLeft.x)) {
         // Flip x.
         gfx.scale(-1.0, -1.0);
+      }
+      else if (rotInfo.bBottomRot) {
+        if (willRotDir === tj.DD.constants.ROTDIR.CW) {
+          gfx.scale(-1.0, -1.0);
+          gfx.rotate(Math.PI * 0.5);
+        }
+        else {
+          gfx.scale(1.0, 1.0);
+          gfx.rotate(-Math.PI * 0.5);
+        }
       }
 
       if (willRotDir === tj.DD.constants.ROTDIR.CW) {
@@ -147,6 +158,15 @@ tj.DigiddyDog.StateLevelTest = function(gameIn) {
 
       gfx.closePath();
       gfx.stroke();
+
+      if (rotInfo.bBottomRot) {
+        if (willRotDir === tj.DD.constants.ROTDIR.CW) {
+          gfx.rotate(Math.PI * 0.5);
+        }
+        else {
+          gfx.rotate(-Math.PI * 0.5);
+        }
+      }
       gfx.scale(1.0, 1.0);
       gfx.translate(-rotIconPos.x, -rotIconPos.y);
     }
@@ -162,10 +182,10 @@ tj.DigiddyDog.StateLevelTest = function(gameIn) {
     gfx.lineWidth = tj.DD.constants.BORDER_WIDTH / 2;
     gfx.strokeStyle = tj.DD.constants.FOCUS_CELL_COLOR;
     gfx.beginPath();
-    gfx.rect(gridTopLeft.x + tj.DD.constants.BORDER_WIDTH / 2 + focusCell.col * (tj.DD.constants.BORDER_WIDTH + tj.DD.constants.CELL_SIZE_PX),
-             gridTopLeft.y + tj.DD.constants.BORDER_WIDTH / 2 + focusCell.row * (tj.DD.constants.BORDER_WIDTH + tj.DD.constants.CELL_SIZE_PX),
-             tj.DD.constants.CELL_SIZE_PX + tj.DD.constants.BORDER_WIDTH,
-             tj.DD.constants.CELL_SIZE_PX + tj.DD.constants.BORDER_WIDTH);
+    gfx.rect(gridTopLeft.x + tj.DD.constants.BORDER_WIDTH / 2 + focusCell.col * (tj.DD.constants.BORDER_WIDTH + tileGrid.getCellSize()),
+             gridTopLeft.y + tj.DD.constants.BORDER_WIDTH / 2 + focusCell.row * (tj.DD.constants.BORDER_WIDTH + tileGrid.getCellSize()),
+             tileGrid.getCellSize() + tj.DD.constants.BORDER_WIDTH,
+             tileGrid.getCellSize() + tj.DD.constants.BORDER_WIDTH);
     gfx.closePath();
     gfx.stroke();
   }
@@ -283,7 +303,7 @@ tj.DigiddyDog.StateLevelTest = function(gameIn) {
     if (tileGrid.isAcceptingUserInput()) {
       // End any paths.
       if (bWillRot) {
-          tileGrid.rotateBoard(rotDirs[lastPos.x < gridTopLeft.x ? 0 : 1][pos.y - lastPos.y > 0 ? 0 : 1]);
+        tileGrid.rotateBoard(willRotDir);
       }
       else if (tileGrid && playerPath.isActive()) {
         if (playerPath.length() === 2) {
@@ -327,6 +347,12 @@ tj.DigiddyDog.StateLevelTest = function(gameIn) {
         lastPos.x = pos.x;
         lastPos.y = pos.y;
         rotInfo.bBottomRot = false;
+        rotInfo.bWantsRot = true;
+      }
+      else if (pos.y > gridTopLeft. y + tileGrid.height()) {
+        lastPos.x = pos.x;
+        lastPos.y = pos.y;
+        rotInfo.bBottomRot = true;
         rotInfo.bWantsRot = true;
       }
       else if (pos.x >= gridTopLeft.x && pos.x < gridTopLeft.x + tileGrid.width() &&
@@ -384,14 +410,27 @@ tj.DigiddyDog.StateLevelTest = function(gameIn) {
       focusCell.col = col;
    
       if (rotInfo.bWantsRot) {
-        if (!bWillRot && Math.abs(pos.y - lastPos.y) > tj.DD.constants.ROT_THRESH_PX) {
-          bWillRot = true;
-        }
+        if (rotInfo.bBottomRot) {
+          if (!bWillRot && Math.abs(pos.x - lastPos.x) > tj.DD.constants.ROT_THRESH_PX) {
+            bWillRot = true;
+          }
 
-        if (bWillRot) {
-          willRotDir = rotDirs[lastPos.x < gridTopLeft.x ? 0 : 1][pos.y - lastPos.y > 0 ? 0 : 1];
-          rotIconPos.x = pos.x;
-          rotIconPos.y = pos.y - tj.DD.constants.ROT_THRESH_PX;
+          if (bWillRot) {
+            willRotDir = pos.x < lastPos.x ? tj.DD.constants.ROTDIR.CW : tj.DD.constants.ROTDIR.CCW;
+            rotIconPos.x = pos.x;
+            rotIconPos.y = pos.y - tj.DD.constants.ROT_THRESH_PX;
+          }
+        }
+        else {
+          if (!bWillRot && Math.abs(pos.y - lastPos.y) > tj.DD.constants.ROT_THRESH_PX) {
+            bWillRot = true;
+          }
+
+          if (bWillRot) {
+            willRotDir = rotDirs[lastPos.x < gridTopLeft.x ? 0 : 1][pos.y - lastPos.y > 0 ? 0 : 1];
+            rotIconPos.x = pos.x;
+            rotIconPos.y = pos.y - tj.DD.constants.ROT_THRESH_PX;
+          }
         }
       }
       else if (bDrawingPath && Math.abs(row - lastCell.row) + Math.abs(col - lastCell.col) === 1) {
@@ -419,7 +458,7 @@ tj.DigiddyDog.StateLevelTest = function(gameIn) {
 
   this.onMouseOut = function(pos) {
     // End any paths.
-    return this.mouseUp(pos);
+    return this.onMouseUp(pos);
   };
 
   this.onTouchStart = function(pos) {

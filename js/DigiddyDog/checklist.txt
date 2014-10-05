@@ -1,4 +1,12 @@
 Checklist:
+Bitmap art
+Bitmap font
+Particles
+Level 
+Dot trail
+
+Complete:
+Board background
 Board:
   -- Gems
   -- Player
@@ -7,9 +15,7 @@ Rotation
 Fall
 Paths
 Move
-
-Complete:
-Board background
+Scaling board
 
 
 Clockwise Rotation:

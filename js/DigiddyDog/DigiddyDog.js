@@ -1,6 +1,7 @@
 tj.DigiddyDog = function() {
   this.blocksImage = null,
-  this.backBuffer = null;
+  this.backBuffer = null,
+  this.cellSize = 32;
 
   //  stateMainMap = null,
   //  stateHeartRate = null,
@@ -21,6 +22,7 @@ tj.DigiddyDog = function() {
   tj.Game.addListener(this, tj.Game.MESSAGES.ABORT_GAME);
 
   this.game.setState(new tj.DigiddyDog.StateResourceLoad(this));
+  tj.Game.addListener(this, tj.Game.MESSAGES.CREATE_BACKGROUND);
   this.game.start();
 };
 
@@ -28,16 +30,21 @@ tj.DigiddyDog.prototype.strings = {
   YOU_DIED: "You Died",
   LEVEL_PREFIX: "Level",
   READY: "Ready",
+  PATTERN: "Pattern",
 };
 
 tj.DigiddyDog.prototype.constants = {
   ROWS: 16,
   COLS: 16,
-  CELL_SIZE_PX: 40,
+  CELL_SIZE_PX: {DESIRED: 64,
+                 LARGE: 40,
+                 MEDIUM: 32,
+                 SMALL: 16},
   BACK_COLOR: "#bbaa44",
   DIRT_COLOR: "#443300",
   COLOR_MISSING: "#ff00ff",
   FOCUS_CELL_COLOR: "white",
+  MARGIN_SCALE: 0.85,
   TYPE: {PLAYER: "dog",
          GEM: "gem",
          ROCK: "rock",
@@ -59,7 +66,7 @@ tj.DigiddyDog.prototype.constants = {
   MAX_SPEED: 4,     // MUST equal MAX_CELLS_PER_PATH
   DEFAULT_MOVE_TIME_MS: 500,
   MIN_DRAG_TIME_MS: 50,
-  BACKGROUND_CELL_FACTOR: 6,
+  BACKGROUND_CELL_FACTOR: 3,
   DIR: {UNKNOWN: 99,
         NONE: 0,
         UP: -1,
@@ -81,9 +88,14 @@ tj.DigiddyDog.prototype.setBlocksImage = function(blocksImage) {
 };
 
 tj.DigiddyDog.prototype.createBackBuffer = function() {
-  this.backBuffer = tj.Graphics.newBuffer(tj.Graphics.width(), tj.DD.constants.ROWS * tj.DD.constants.CELL_SIZE_PX);
+  this.backBuffer = tj.Graphics.newBuffer(tj.Graphics.width(), tj.Graphics.height() * tj.DD.constants.MARGIN_SCALE);
 
   return this.backBuffer;
+};
+
+tj.DigiddyDog.prototype.createBackground = function(cellSize) {
+  this.cellSize = cellSize;
+  this.drawBackBufferBackground(cellSize);
 };
 
 tj.DigiddyDog.prototype.drawBackBufferBackground = function() {
@@ -108,8 +120,8 @@ tj.DigiddyDog.prototype.drawBackBufferBackground = function() {
     gfx.closePath();
     gfx.fill();
 
-    rows = Math.round(this.backBuffer.height / (tj.DD.constants.CELL_SIZE_PX * tj.DD.constants.BACKGROUND_CELL_FACTOR));
-    cols = Math.round(this.backBuffer.width / (tj.DD.constants.CELL_SIZE_PX * tj.DD.constants.BACKGROUND_CELL_FACTOR));
+    rows = Math.round(this.backBuffer.height / (this.cellSize * tj.DD.constants.BACKGROUND_CELL_FACTOR));
+    cols = Math.round(this.backBuffer.width / (this.cellSize * tj.DD.constants.BACKGROUND_CELL_FACTOR));
     cellWidth = Math.floor(this.backBuffer.width / cols);
     cellHeight = Math.floor(this.backBuffer.height / rows);
 
@@ -176,12 +188,12 @@ tj.DigiddyDog.prototype.drawBackgroundCell = function(gfx, left, top, cellWidth,
 
 tj.DigiddyDog.prototype.xToCol = function(x, left) {
   x = x - left;
-  return Math.floor(x / (tj.DD.constants.CELL_SIZE_PX + tj.DD.constants.BORDER_WIDTH)); 
+  return Math.floor(x / (this.cellSize + tj.DD.constants.BORDER_WIDTH)); 
 };
 
 tj.DigiddyDog.prototype.yToRow = function(y, top) {
   y = y - top;
-  return Math.floor(y / (tj.DD.constants.CELL_SIZE_PX + tj.DD.constants.BORDER_WIDTH)); 
+  return Math.floor(y / (this.cellSize + tj.DD.constants.BORDER_WIDTH)); 
 };
 
 // tj.DigiddyDog.prototype.colToX = function(col, left) {

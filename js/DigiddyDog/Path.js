@@ -247,12 +247,12 @@ tj.DigiddyDog.Path = function(colorIn) {
     return bAdded;
   };
 
-  this.draw = function(gfx, cellIndex) {
+  this.draw = function(gfx, cellIndex, cellSize) {
     var i = 0,
         x = 0,
         y = 0,
-        cellDx = tj.DD.constants.CELL_SIZE_PX + tj.DD.constants.BORDER_WIDTH,
-        cellDy = tj.DD.constants.CELL_SIZE_PX + tj.DD.constants.BORDER_WIDTH,
+        cellDx = cellSize + tj.DD.constants.BORDER_WIDTH,
+        cellDy = cellSize + tj.DD.constants.BORDER_WIDTH,
         halfSize = 0,
         fifthSize = 0,
         rot = 0,
