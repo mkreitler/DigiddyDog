@@ -1,0 +1,35 @@
+Checklist:
+Board:
+  -- Gems
+  -- Player
+  -- Stones
+Rotation
+Fall
+Paths
+Move
+
+Complete:
+Board background
+
+
+Clockwise Rotation:
+1 2 3
+4 5 6
+7 8 9
+
+(row, col) -> (col, COL_MAX - row)
+
+7 4 1
+8 5 2
+9 6 3
+
+Counter-clockwise Rotation:
+1 2 3
+4 5 6
+7 8 9
+
+(row, col) -> (ROW_MAX - col, row)
+
+3 6 9
+2 5 8
+1 4 7

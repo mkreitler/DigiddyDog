@@ -1,0 +1,2 @@
+tj.Game.STRINGS = {
+};
