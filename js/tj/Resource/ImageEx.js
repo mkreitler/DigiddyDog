@@ -21,7 +21,7 @@ tj.ImageEx.prototype.draw = function(gfx, x ,y) {
 
 tj.ImageEx.prototype.drawRect = function(gfx, srcX, srcY, w, h, destX, destY) {
 	if (gfx) {
-		gfx.drawImage(srcX, srcY, w, h, destX, destY, w, h);
+		gfx.drawImage(this.image, srcX, srcY, w, h, destX, destY, w, h);
 	}
 };
 

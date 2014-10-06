@@ -7,6 +7,8 @@ tj.DigiddyDog.TileGrid = function(levelInfo) {
   this.cellSize = 0;
   this.gridBuffer = null;
   this.levelInfo = levelInfo;
+  this.levelStatusIndex = 0;
+  this.secondaryMessageIndex = -1;
   this.origin = {x: 0, y: 0, width: 0, height: 0};
   this.gravity = {x: 0, y: 1};
   this.pattern = null;
@@ -21,23 +23,47 @@ tj.DigiddyDog.TileGrid = function(levelInfo) {
   this.nCols = 0;
   this.bPlayerKilled = true;
 
+  // setUpdate must precede buildLevel because build level causes a
+  // context shift in the main state that setUpdate undoes.
+  this.setUpdate(this.updateDefault);
+
   this.buildLevel(levelInfo);
 
   for (i=0; i<tj.DD.constants.MAX_CELLS_PER_PATH; ++i) {
     this.pathCells.push({path: null, pathIndex: -1});
   }
 
-  this.update = this.updateDefault;
+  tj.Game.addListener(this, tj.DD.strings.MSG.STATUS_MESSAGE_DISMISSED);
 };
 
 // Prototype Functions ////////////////////////////////////////////////////////
+tj.DigiddyDog.TileGrid.prototype.statusMessageDismissed = function(oldMsg) {
+  if (this.levelInfo) {
+    if (this.levelInfo.secondaryMessages && this.secondaryMessageIndex >= 0 && this.levelInfo.secondaryMessages.length > this.secondaryMessageIndex) {
+      tj.Game.sendMessage(tj.DD.strings.MSG.ADD_STATUS_MESSAGE, this.levelInfo.secondaryMessages[this.secondaryMessageIndex]);
+      this.secondaryMessageIndex += 1;
+    }
+    else if (this.levelInfo.messages && this.levelInfo.messages.length > this.levelStatusIndex) {
+      tj.Game.sendMessage(tj.DD.strings.MSG.ADD_STATUS_MESSAGE, this.levelInfo.messages[this.levelStatusIndex]);
+      this.levelStatusIndex += 1;
+    }
+    else if (this.secondaryMessageIndex >= 0 && this.levelInfo.secondaryMessages && this.levelInfo.secondaryMessages.length > this.secondaryMessageIndex) {
+
+    }
+  }
+};
+
 tj.DigiddyDog.TileGrid.prototype.setOrigin = function(x, y) {
   this.origin.x = x;
   this.origin.y = y;
 };
 
-tj.DigiddyDog.TileGrid.prototype.isAcceptingUserInput = function() {
-  return this.update === this.updateDefault && !this.bPlayerKilled && !this.rotInfo.bWantsRotate;
+tj.DigiddyDog.TileGrid.prototype.setUpdate = function(nextUpdate) {
+  if (nextUpdate === this.updateDefault) {
+    tj.Game.sendMessage(tj.DD.strings.MSG.RESUME_PLAY, null);
+  }
+
+  this.update = nextUpdate;
 };
 
 tj.DigiddyDog.TileGrid.prototype.rotateBoard = function(rotDir) {
@@ -57,7 +83,7 @@ tj.DigiddyDog.TileGrid.prototype.consumeGems = function(path) {
   this.moveInfo.path = path;
   this.moveInfo.leg = -1;
 
-  this.update = this.nextLeg();
+  this.setUpdate(this.nextLeg());
 };
 
 tj.DigiddyDog.TileGrid.prototype.nextLeg = function() {
@@ -131,6 +157,10 @@ tj.DigiddyDog.TileGrid.prototype.collapse = function() {
   this.moveInfo.elapsedTime = 0;
   this.bLevelComplete = nGems === 0;
 
+  if (!bCollapsing) {
+    this.sendSecondaryMessage();
+  }
+
   return bCollapsing ? this.updateCollapse : this.updateDefault;
 };
 
@@ -154,7 +184,7 @@ tj.DigiddyDog.TileGrid.prototype.movePlayer = function(fromRow, fromCol, toRow, 
       this.moveInfo.fromTile = fromTile;
       this.moveInfo.toTile = toTile;
       this.moveInfo.elapsedTime = 0;
-      this.update = this.updateSwapPlayerPosition;
+      this.setUpdate(this.updateSwapPlayerPosition);
     }
   }
 };
@@ -342,13 +372,24 @@ tj.DigiddyDog.TileGrid.prototype.buildLevel = function(levelInfo) {
       nRocks = 0,
       nSolidRocks = 0,
       cell = null,
-      bRandomLevel = true;
+      bRandomLevel = true,
+      statusMessage = null;
 
   rows = this.levelInfo ? this.levelInfo.rows || rows : rows;
   cols = this.levelInfo ? this.levelInfo.cols || cols : cols;
   pattern = this.levelInfo ? this.levelInfo.pattern || pattern : pattern;
   bRandomLevel = this.levelInfo ? this.levelInfo.bRandomLevel || false : true;
   nSolidRocks = this.levelInfo ? this.levelInfo.solidRocks || 0 : 0;
+
+  if (this.levelInfo && this.levelInfo.messages && this.levelInfo.messages.length > 0) {
+    this.levelStatusIndex = 1;
+    statusMessage = this.levelInfo.messages[0];
+  }
+  else {
+    statusNessage = null;
+  }
+
+  tj.Game.sendMessage(tj.DD.strings.MSG.ADD_STATUS_MESSAGE, statusMessage);
 
   this.createGridBuffer(rows, cols);
 
@@ -413,6 +454,7 @@ tj.DigiddyDog.TileGrid.prototype.buildLevel = function(levelInfo) {
   this.bLevelComplete = false;
   this.bPlayerKilled = false;
   this.rotInfo.bWantsRotate = false;
+  this.secondaryMessageIndex = -1;
 };
 
 tj.DigiddyDog.TileGrid.prototype.updateDefault = function(dt) {
@@ -420,7 +462,7 @@ tj.DigiddyDog.TileGrid.prototype.updateDefault = function(dt) {
     tj.Game.sendMessage(tj.Game.MESSAGES.PLAYER_DIED);
   }
   else if (this.rotInfo.bWantsRotate) {
-    this.update = this.updateRotateBoard;
+    this.setUpdate(this.updateRotateBoard);
   }
   else if (this.bLevelComplete) {
     // TODO: signal end of level.
@@ -462,7 +504,7 @@ tj.DigiddyDog.TileGrid.prototype.updateSwapPlayerPosition = function(dt) {
     this.moveInfo.fromTile.setGridPos(this.moveInfo.fromTile.getDestRow(), this.moveInfo.fromTile.getDestCol());
     this.rows[this.moveInfo.fromTile.getRow()][this.moveInfo.fromTile.getCol()].tile = this.moveInfo.fromTile;
 
-    this.update = this.collapse();
+    this.setUpdate(this.collapse());
   }
 };
 
@@ -485,7 +527,7 @@ tj.DigiddyDog.TileGrid.prototype.updateConsumeGems = function(dt) {
     this.rows[tile.getDestRow()][tile.getDestCol()].tile = tile;
     tile.setGridPos(tile.getDestRow(), tile.getDestCol());
 
-    this.update = this.nextLeg();
+    this.setUpdate(this.nextLeg());
   };
 };
 
@@ -546,7 +588,7 @@ tj.DigiddyDog.TileGrid.prototype.updateRotateBoard = function(dt) {
     this.rotInfo.bWantsRotate = false;
 
     // Resolve resulting collapse.
-    this.update = this.collapse();
+    this.setUpdate(this.collapse());
   }
 };
 
@@ -611,8 +653,20 @@ tj.DigiddyDog.TileGrid.prototype.updateCollapse = function(dt) {
 
     this.workTiles.length = 0;
 
+    this.sendSecondaryMessage();
+
     // See if anything still needs to collapse.
-    this.update = this.collapse();
+    this.setUpdate(this.collapse());
+  }
+};
+
+tj.DigiddyDog.TileGrid.prototype.sendSecondaryMessage = function() {
+  if (this.levelInfo &&
+      this.levelInfo.secondaryMessages &&
+      this.secondaryMessageIndex < 0 &&
+      this.levelInfo.secondaryMessages.length > 0) {
+    tj.Game.sendMessage(tj.DD.strings.MSG.ADD_STATUS_MESSAGE, this.levelInfo.secondaryMessages[0]);
+    this.secondaryMessageIndex = 1;
   }
 };
 

@@ -1,8 +1,18 @@
 tj.DigiddyDog = function() {
+  tj.DD = this;
+
   this.blocksImage = null,
   this.backBuffer = null,
-  this.cellSize = 32;
+  this.headImage = null,
+  this.logoImage = null,
+  this.cellSize = 32,
+  this.gemImages = {},
+  this.statusMsgAnchor = {x:0, y:0};
 
+  this.init();
+};
+
+tj.DigiddyDog.prototype.init = function() {
   //  stateMainMap = null,
   //  stateHeartRate = null,
   //  stateWindTurbine = null,
@@ -22,7 +32,7 @@ tj.DigiddyDog = function() {
   tj.Game.addListener(this, tj.Game.MESSAGES.ABORT_GAME);
 
   this.game.setState(new tj.DigiddyDog.StateResourceLoad(this));
-  tj.Game.addListener(this, tj.Game.MESSAGES.CREATE_BACKGROUND);
+
   this.game.start();
 };
 
@@ -31,6 +41,34 @@ tj.DigiddyDog.prototype.strings = {
   LEVEL_PREFIX: "Level",
   READY: "Ready",
   PATTERN: "Pattern",
+
+  // Messages
+  MSG: {DRAW_LOGO: "drawLogo",
+        RESUME_PLAY: "resumePlay",
+        STATUS_MESSAGE_DISMISSED: "statusMessageDismissed",
+        ADD_STATUS_MESSAGE: "addStatusMessage",
+  },
+
+  LEVEL_MSG: {
+    LEVEL_ONE: ["Welcome to Digiddy Dog! (Tap here to dismiss)",
+                "Object: clear all gems.",
+                "How: Drag Digiddy over gems in the order shown by the pattern.",
+                "Try it: tap or press the white dog and drag over 4 adjacent gems."],
+
+    LEVEL_TWO: ["As you advance, patterns increase in complexity.",
+                "On this level, the pattern is 'red, green, green, red'.",
+                "The 'pattern' box on the right always shows the pattern for the level."],
+
+    LEVEL_FIVE: ["If a rock falls on Digiddy, he will lose a life."],
+
+    LEVEL_SIX: ["Digiddy can't swap places with black rocks."],
+  },
+
+  LEVEL_MSG_ALT: {
+    LEVEL_ONE:["If you get stuck, you can swap adjacent gems and rotate the board.",
+               "To swap, tap above, below, left, or right of Digiddy.",
+               "To rotate, drag outside the left, right, or bottom border."],
+  },
 };
 
 tj.DigiddyDog.prototype.constants = {
@@ -44,6 +82,8 @@ tj.DigiddyDog.prototype.constants = {
   DIRT_COLOR: "#443300",
   COLOR_MISSING: "#ff00ff",
   FOCUS_CELL_COLOR: "white",
+  ALPHA_BLACK: "rgba(0, 0, 0, 0.5)",
+  STATUS_BLACK: "rgba(0, 0, 0, 0.8)",
   MARGIN_SCALE: 0.85,
   TYPE: {PLAYER: "dog",
          GEM: "gem",
@@ -57,6 +97,12 @@ tj.DigiddyDog.prototype.constants = {
   ROT_THRESH_PX: 20,
   ROT_TIME: 0.3,
   DROP_TEXT_OFFSET: 2,
+  LOGO_MARGIN: 0,
+  MESSAGE_WINDOW_WIDTH_FACTOR: 6.0 / 8.0,
+  MESSAGE_WINDOW_HEIGHT_FACTOR: 1.0 / 6.0,
+  STATUS_MESSAGE_ANCHOR_X_FACTOR: 0.8,
+  STATUS_MESSAGE_ANCHOR_Y_FACTOR: 0.0,
+  MESSAGE_WINDOW_HEIGHT_OFFSET: 1.0,
 
   DEFAULT_MAX_TYPE: 4,
   MAX_NORMAL_TILE_TYPE: 6,  // Normal tiles have indices 0-5
@@ -75,8 +121,22 @@ tj.DigiddyDog.prototype.constants = {
         RIGHT: 1},
 };
 
+tj.DigiddyDog.prototype.drawLogo = function(gfx) {
+  var x = 0,
+      y = 0;
+
+  if (gfx && this.logoImage) {
+    x = tj.DD.constants.LOGO_MARGIN;
+    y = tj.DD.constants.LOGO_MARGIN;
+    this.logoImage.draw(gfx, x, y);
+  }
+};
+
 tj.DigiddyDog.prototype.startGame = function() {
-  this.game.setState(new tj.DigiddyDog.StateLevelTest(this));
+  tj.Game.addListener(this, tj.Game.MESSAGES.CREATE_BACKGROUND);
+  tj.Game.addListener(this, tj.DD.strings.MSG.DRAW_LOGO);
+
+  this.game.setState(new tj.DigiddyDog.StateLevelTest(this, this.statusMsgAnchor));
 };
 
 tj.DigiddyDog.prototype.abortGame = function(errMsg) {
@@ -85,6 +145,23 @@ tj.DigiddyDog.prototype.abortGame = function(errMsg) {
 
 tj.DigiddyDog.prototype.setBlocksImage = function(blocksImage) {
   this.blocksImage = blocksImage;
+};
+
+tj.DigiddyDog.prototype.setHeadImage = function(headImage) {
+  this.headImage = headImage;
+};
+
+tj.DigiddyDog.prototype.setLogoImage = function(logoImage) {
+  this.logoImage = logoImage;
+};
+
+tj.DigiddyDog.prototype.setGemImages = function(gemsDesired, gemsLarge, gemsMedium, gemsSmall) {
+  this.gemImages["" + tj.DD.constants.CELL_SIZE_PX.DESIRED] = gemsDesired;
+  this.gemImages["" + tj.DD.constants.CELL_SIZE_PX.LARGE] = gemsLarge;
+  this.gemImages["" + tj.DD.constants.CELL_SIZE_PX.MEDIUM] = gemsMedium;
+  this.gemImages["" + tj.DD.constants.CELL_SIZE_PX.SMALL] = gemsSmall;
+
+  tj.DigiddyDog.TileClass.setGemImages(this.gemImages);
 };
 
 tj.DigiddyDog.prototype.createBackBuffer = function() {
@@ -148,6 +225,14 @@ tj.DigiddyDog.prototype.drawBackBufferBackground = function() {
 
     gfx.closePath();
     gfx.fill();
+
+    if (this.headImage) {
+      x = Math.round(this.headImage.width() * 0.1);
+      y = this.backBuffer.height - this.headImage.height() - this.headImage.width() * 0.1;
+      this.statusMsgAnchor.x = x + this.headImage.width() * tj.DD.constants.STATUS_MESSAGE_ANCHOR_X_FACTOR;
+      this.statusMsgAnchor.y = this.backBuffer.height - this.headImage.height();
+      this.headImage.draw(gfx, x, y);
+    }
   }
 };
 

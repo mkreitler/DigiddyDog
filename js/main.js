@@ -17,6 +17,6 @@ window.onload = function () {
 //    	box.innerHTML = box.innerHTML === "Basic" ? "Sample" : "Basic";
 //    });
     
-    tj.DD = new tj.DigiddyDog();
+    var localGame = new tj.DigiddyDog();
 };
 

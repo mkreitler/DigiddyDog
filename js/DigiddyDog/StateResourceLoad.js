@@ -7,6 +7,12 @@ tj.DigiddyDog.StateResourceLoad = function(gameIn) {
     tj.Resources.requestMusic("art/music/theme-white");
 
     game.setBlocksImage(tj.Resources.requestImage("art/blocks.png"));
+    game.setHeadImage(tj.Resources.requestImage("art/digiddyHead.png"));
+    game.setLogoImage(tj.Resources.requestImage("art/logo.png"));
+    game.setGemImages(tj.Resources.requestImage("art/gems64.png"),
+                       tj.Resources.requestImage("art/gems40.png"),
+                       tj.Resources.requestImage("art/gems32.png"),
+                       tj.Resources.requestImage("art/gems16.png"));
 
     tj.Resources.sendRequests();
   };

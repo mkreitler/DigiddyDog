@@ -17,6 +17,24 @@ tj.DigiddyDog.Tile = function(type, row, col, x, y, color) {
 };
 
 // Prototype Functions ////////////////////////////////////////////////////////
+tj.DigiddyDog.TileClass = tj.DigiddyDog.Tile.prototype;
+
+tj.DigiddyDog.Tile.prototype.gemImages = null;
+tj.DigiddyDog.Tile.prototype.rockImages = null;
+tj.DigiddyDog.Tile.prototype.playerImages = null;
+
+tj.DigiddyDog.Tile.prototype.setGemImages = function(images) {
+  this.gemImages = images;
+};
+
+tj.DigiddyDog.Tile.prototype.setRockImages = function(images) {
+  this.rockImages = images;
+};
+
+tj.DigiddyDog.Tile.prototype.setPlayerImages = function(images) {
+  this.playerImages = images;
+};
+
 tj.DigiddyDog.Tile.prototype.getRow = function() {
   return this.row;
 };
@@ -95,14 +113,29 @@ tj.DigiddyDog.Tile.prototype.setGridDest = function(row, col) {
 };
 
 tj.DigiddyDog.Tile.prototype.drawGem = function(gfx, cellSize) {
-  gfx.fillStyle = this.colorMap[this.color] || tj.DD.constants.MISSING_COLOR;
-  gfx.beginPath();
-  gfx.moveTo(this.x, this.y - Math.round(cellSize * 0.5));
-  gfx.lineTo(this.x + Math.round(cellSize * 0.25), this.y);
-  gfx.lineTo(this.x, this.y + Math.round(cellSize * 0.5));
-  gfx.lineTo(this.x - Math.round(cellSize * 0.25), this.y);
-  gfx.closePath();
-  gfx.fill();
+  var x = 0,
+      y = 0,
+      tileKey = null,
+      srcY = 0,
+      halfSize = Math.round(cellSize * 0.5);
+
+  if (tj.DigiddyDog.TileClass.gemImages && tj.DigiddyDog.TileClass.gemImages["" + cellSize]) {
+    x = this.x - halfSize;
+    y = this.y - halfSize;
+    tileKey = "" + cellSize;
+    srcY = tj.DigiddyDog.TileClass.indexMap[this.color] * cellSize;
+    tj.DigiddyDog.TileClass.gemImages[tileKey].drawRect(gfx, 0, srcY, cellSize, cellSize, x, y);
+  }
+  else {
+    gfx.fillStyle = this.colorMap[this.color] || tj.DD.constants.MISSING_COLOR;
+    gfx.beginPath();
+    gfx.moveTo(this.x, this.y - Math.round(cellSize * 0.5));
+    gfx.lineTo(this.x + Math.round(cellSize * 0.25), this.y);
+    gfx.lineTo(this.x, this.y + Math.round(cellSize * 0.5));
+    gfx.lineTo(this.x - Math.round(cellSize * 0.25), this.y);
+    gfx.closePath();
+    gfx.fill();
+  }
 };
 
 tj.DigiddyDog.Tile.prototype.drawDog = function(gfx, cellSize) {
@@ -159,4 +192,11 @@ tj.DigiddyDog.Tile.prototype.colorMap = {r: "red",
                                          w: "white",
                                          e: "#555555",
                                          l: "black"};
+
+tj.DigiddyDog.Tile.prototype.indexMap = {r: 1,
+                                         g: 2,
+                                         b: 3,
+                                         y: 4,
+                                         p: 5,
+                                         o: 6};
 
