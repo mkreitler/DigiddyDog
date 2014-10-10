@@ -74,7 +74,7 @@ tj.DigiddyDog.Tile.prototype.isPassable = function() {
 
 tj.DigiddyDog.Tile.prototype.squishesPlayer = function() {
   return this.type === tj.DD.constants.TYPE.ROCK ||
-         this.type === tj.DD.constants.TYPE.SOLID_ROCK;
+         this.type === tj.DD.constants.TYPE.SLAB;
 };
 
 tj.DigiddyDog.Tile.prototype.getType = function() {
@@ -139,49 +139,94 @@ tj.DigiddyDog.Tile.prototype.drawGem = function(gfx, cellSize) {
 };
 
 tj.DigiddyDog.Tile.prototype.drawDog = function(gfx, cellSize) {
-  gfx.fillStyle = this.colorMap[this.color] || tj.DD.constants.MISSING_COLOR;
-  gfx.strokeStyle = "#444444";
-  gfx.lineWidth = 2;
-  gfx.beginPath();
-  gfx.arc(this.x, this.y, Math.round(cellSize * 0.4), 0, 2 * Math.PI, true);
-  gfx.closePath();
-  gfx.fill();
-  gfx.stroke();
+  var x = 0,
+      y = 0,
+      tileKey = null,
+      srcY = 0,
+      halfSize = Math.round(cellSize * 0.5);
+
+  if (tj.DigiddyDog.TileClass.playerImages && tj.DigiddyDog.TileClass.playerImages["" + cellSize]) {
+    x = this.x - halfSize;
+    y = this.y - halfSize;
+    tileKey = "" + cellSize;
+    srcY = cellSize;
+    tj.DigiddyDog.TileClass.playerImages[tileKey].drawRect(gfx, 0, srcY, cellSize, cellSize, x, y);
+  }
+  else {
+    gfx.fillStyle = this.colorMap[this.color] || tj.DD.constants.MISSING_COLOR;
+    gfx.strokeStyle = "#444444";
+    gfx.lineWidth = 2;
+    gfx.beginPath();
+    gfx.arc(this.x, this.y, Math.round(cellSize * 0.4), 0, 2 * Math.PI, true);
+    gfx.closePath();
+    gfx.fill();
+    gfx.stroke();
+  }
 };
 
 tj.DigiddyDog.Tile.prototype.drawRock = function(gfx, cellSize) {
-  gfx.fillStyle = this.colorMap[this.color] || tj.DD.constants.MISSING_COLOR;
-  gfx.strokeStyle = "#aaaaaa";
-  gfx.lineWidth = 2;
-  gfx.beginPath();
-  gfx.moveTo(this.x - Math.round(cellSize * 0.5 * 0.9), this.y + Math.round(cellSize * 0.5 * 0.9));
-  gfx.lineTo(this.x + Math.round(cellSize * 0.5 * 0.9), this.y + Math.round(cellSize * 0.5 * 0.9));
-  gfx.lineTo(this.x + Math.round(cellSize * 0.5 * 0.5), this.y - Math.round(cellSize * 0.5 * 0.1));
-  gfx.lineTo(this.x - Math.round(cellSize * 0.5 * 0.5), this.y - Math.round(cellSize * 0.5 * 0.1));
-  gfx.closePath();
-  gfx.fill();
-  gfx.stroke();
+  var x = 0,
+      y = 0,
+      tileKey = null,
+      srcY = 0,
+      halfSize = Math.round(cellSize * 0.5);
+
+  if (tj.DigiddyDog.TileClass.rockImages && tj.DigiddyDog.TileClass.rockImages["" + cellSize]) {
+    x = this.x - halfSize;
+    y = this.y - halfSize;
+    tileKey = "" + cellSize;
+    srcY = cellSize;
+    tj.DigiddyDog.TileClass.rockImages[tileKey].drawRect(gfx, 0, srcY, cellSize, cellSize, x, y);
+  }
+  else {
+    gfx.fillStyle = this.colorMap[this.color] || tj.DD.constants.MISSING_COLOR;
+    gfx.strokeStyle = "#aaaaaa";
+    gfx.lineWidth = 2;
+    gfx.beginPath();
+    gfx.moveTo(this.x - Math.round(cellSize * 0.5 * 0.9), this.y + Math.round(cellSize * 0.5 * 0.9));
+    gfx.lineTo(this.x + Math.round(cellSize * 0.5 * 0.9), this.y + Math.round(cellSize * 0.5 * 0.9));
+    gfx.lineTo(this.x + Math.round(cellSize * 0.5 * 0.5), this.y - Math.round(cellSize * 0.5 * 0.1));
+    gfx.lineTo(this.x - Math.round(cellSize * 0.5 * 0.5), this.y - Math.round(cellSize * 0.5 * 0.1));
+    gfx.closePath();
+    gfx.fill();
+    gfx.stroke();
+  }
 };
 
-tj.DigiddyDog.Tile.prototype.drawSolidRock = function(gfx, cellSize) {
-  gfx.fillStyle = this.colorMap[this.color] || tj.DD.constants.MISSING_COLOR;
-  gfx.strokeStyle = "#ffffff";
-  gfx.lineWidth = 2;
-  gfx.beginPath();
-  gfx.moveTo(this.x - Math.round(cellSize * 0.5 * 0.67), this.y + Math.round(cellSize * 0.5 * 0.9));
-  gfx.lineTo(this.x + Math.round(cellSize * 0.5 * 0.67), this.y + Math.round(cellSize * 0.5 * 0.9));
-  gfx.lineTo(this.x + Math.round(cellSize * 0.5 * 0.67), this.y - Math.round(cellSize * 0.5 * 0.4));
-  gfx.lineTo(this.x - Math.round(cellSize * 0.5 * 0.67), this.y - Math.round(cellSize * 0.5 * 0.4));
-  gfx.closePath();
-  gfx.fill();
-  gfx.stroke();
+tj.DigiddyDog.Tile.prototype.drawSlab = function(gfx, cellSize) {
+  var x = 0,
+      y = 0,
+      tileKey = null,
+      srcY = 0,
+      halfSize = Math.round(cellSize * 0.5);
+
+  if (tj.DigiddyDog.TileClass.rockImages && tj.DigiddyDog.TileClass.rockImages["" + cellSize]) {
+    x = this.x - halfSize;
+    y = this.y - halfSize;
+    tileKey = "" + cellSize;
+    srcY = 2 * cellSize;
+    tj.DigiddyDog.TileClass.rockImages[tileKey].drawRect(gfx, 0, srcY, cellSize, cellSize, x, y);
+  }
+  else {
+    gfx.fillStyle = this.colorMap[this.color] || tj.DD.constants.MISSING_COLOR;
+    gfx.strokeStyle = "#ffffff";
+    gfx.lineWidth = 2;
+    gfx.beginPath();
+    gfx.moveTo(this.x - Math.round(cellSize * 0.5 * 0.67), this.y + Math.round(cellSize * 0.5 * 0.9));
+    gfx.lineTo(this.x + Math.round(cellSize * 0.5 * 0.67), this.y + Math.round(cellSize * 0.5 * 0.9));
+    gfx.lineTo(this.x + Math.round(cellSize * 0.5 * 0.67), this.y - Math.round(cellSize * 0.5 * 0.4));
+    gfx.lineTo(this.x - Math.round(cellSize * 0.5 * 0.67), this.y - Math.round(cellSize * 0.5 * 0.4));
+    gfx.closePath();
+    gfx.fill();
+    gfx.stroke();
+  }
 };
 
 tj.DigiddyDog.Tile.prototype.drawFns = {gem: null, rock: null, dog: null};  // Keys MUST match tj.DD.constants.TYPE keys
 tj.DigiddyDog.Tile.prototype.drawFns.gem = tj.DigiddyDog.Tile.prototype.drawGem;
 tj.DigiddyDog.Tile.prototype.drawFns.dog = tj.DigiddyDog.Tile.prototype.drawDog;
 tj.DigiddyDog.Tile.prototype.drawFns.rock = tj.DigiddyDog.Tile.prototype.drawRock;
-tj.DigiddyDog.Tile.prototype.drawFns.solidRock = tj.DigiddyDog.Tile.prototype.drawSolidRock;
+tj.DigiddyDog.Tile.prototype.drawFns.slab = tj.DigiddyDog.Tile.prototype.drawSlab;
 
 tj.DigiddyDog.Tile.prototype.colorMap = {r: "red",
                                          y: "yellow",

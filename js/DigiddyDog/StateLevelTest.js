@@ -17,16 +17,12 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
       lastCell = {row: -1, col: -1},
       bWantsPath = false,
       bWantsStatusExit = false,
-      rotInfo = {bWantsRot: false, bBottomRot: false},
+      rotInfo = {bWantsRot: false, willRotDir: 0},
       bWillRot = false,
-      willRotDir = null,
       rotIconPos = {x:0, y:0},
       statusMsgAnchor = statusMsgAnchorIn,
       playerPath = new tj.DigiddyDog.Path("#ffffff"),
-      rotDirs = [
-        [tj.DD.constants.ROTDIR.CCW, tj.DD.constants.ROTDIR.CW],
-        [tj.DD.constants.ROTDIR.CW, tj.DD.constants.ROTDIR.CCW],
-      ],
+      gridRadius = 0,
       statusMessage = [],
 
       levelInfo = [
@@ -34,8 +30,23 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
         {rows: 3, cols: 3, pattern: "rggr", solidRocks: 0, bRandomLevel: true, messages: tj.DD.strings.LEVEL_MSG.LEVEL_TWO},
         {rows: 3, cols: 3, pattern: "gbrr", solidRocks: 0, bRandomLevel: true},
         {rows: 3, cols: 3, pattern: "ygbr", solidRocks: 0, bRandomLevel: true},
-        {rows: 6, cols: 6, pattern: "rgby", solidRocks: 0, bRandomLevel: true, messages: tj.DD.strings.LEVEL_MSG.LEVEL_FIVE},
-        {rows: 6, cols: 6, pattern: "bgry", solidRocks: 1, bRandomLevel: true, messages: tj.DD.strings.LEVEL_MSG.LEVEL_SIX},
+
+        {rows: 4, cols: 4, pattern: "rryr", solidRocks: 0, bRandomLevel: true, messages: tj.DD.strings.LEVEL_MSG.LEVEL_FIVE},
+        {rows: 4, cols: 4, pattern: "bbgg", solidRocks: 0, bRandomLevel: true},
+        {rows: 4, cols: 4, pattern: "ybyg", solidRocks: 0, bRandomLevel: true},
+        {rows: 4, cols: 4, pattern: "rgby", solidRocks: 0, bRandomLevel: true},
+        {rows: 4, cols: 4, pattern: "bryg", solidRocks: 1, bRandomLevel: true, messages: tj.DD.strings.LEVEL_MSG.LEVEL_NINE},
+        {rows: 4, cols: 4, pattern: "gybr", solidRocks: 2, bRandomLevel: true},
+        
+        {rows: 5, cols: 5, pattern: "brrr", solidRocks: 0, bRandomLevel: true},
+        {rows: 5, cols: 5, pattern: "ygyg", solidRocks: 0, bRandomLevel: true},
+        {rows: 5, cols: 5, pattern: "byyr", solidRocks: 0, bRandomLevel: true},
+        {rows: 5, cols: 5, pattern: "gyrb", solidRocks: 0, bRandomLevel: true},
+        {rows: 5, cols: 5, pattern: "ybgr", solidRocks: 1, bRandomLevel: true},
+        {rows: 5, cols: 5, pattern: "rbgy", solidRocks: 2, bRandomLevel: true},
+
+        {rows: 6, cols: 6, pattern: "rgby", solidRocks: 0, bRandomLevel: true}, 
+        {rows: 6, cols: 6, pattern: "bgry", solidRocks: 1, bRandomLevel: true},
         {rows: 10, cols: 10, pattern: "bgry", solidRocks: 2, bRandomLevel: true},
         {rows: 10, cols: 10, pattern: "rgbypo", solidRocks: 0, bRandomLevel: true},
       ];
@@ -62,9 +73,9 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
 
   this.playerDied = function(dataObj) {
     this.exit();
-     this.enter();
+    this.enter();
 
-     this.addStatusMessage(tj.DD.strings.YOU_DIED);
+    this.addStatusMessage(tj.DD.strings.YOU_DIED);
   };
 
   this.addStatusMessage = function(newMessage) {
@@ -72,8 +83,12 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
       newMessage = tj.DD.strings.LEVEL_PREFIX + " " + (levelIndex + 1) + " " + tj.DD.strings.READY + "!";
     }
 
-    statusMessage.push(newMessage);
+    statusMessage.unshift(newMessage);
     this.switchToStatusHandlers();
+
+    if (statusMessage.length === 1) {
+      tj.Game.sendMessage(tj.DD.strings.MSG.PLAY_SOUND_INFO_CLOSE);
+    }
   };
 
   this.switchToDefaultHandlers = function() {
@@ -97,22 +112,28 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
     this.onMouseOut = this.onMouseOutPlaying;
   };
 
+  this.getDimensions = function() {
+    return {rows: tileGrid.getNumRows(), cols: tileGrid.getNumCols(), cellSize: tileGrid.getCellSize()};
+  }
+
   this.enter = function() {
     tileGrid = new tj.DigiddyDog.TileGrid(levelInfo[levelIndex]);
 
     if (!backBuffer) {
       backBuffer = gameIn.createBackBuffer();
-      tj.Game.sendMessage(tj.Game.MESSAGES.CREATE_BACKGROUND, tileGrid.getCellSize());
-
       backBufferLeft = 0;
       backBufferTop = Math.round(tj.Graphics.height() * 0.5 - backBuffer.height * 0.5);
     }
+
+    tj.Game.sendMessage(tj.DD.strings.MSG.RENDER_BACKGROUND, this.getDimensions());
 
     tileGrid.setOrigin(backBufferLeft + Math.round(backBuffer.width * 0.5),
                        backBufferTop + Math.round(backBuffer.height * 0.5));
 
     gridTopLeft.x = tileGrid.xLeft();
     gridTopLeft.y = tileGrid.yTop();
+
+    gridRadius = Math.round(Math.max(tileGrid.getNumRows(), tileGrid.getNumCols()) * 0.5 * tileGrid.getCellSize() * Math.sqrt(2));
 
     if (!tj.MusicMixer.isPlaying()) {
       tj.MusicMixer.randomize(true);
@@ -190,7 +211,8 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
   };
 
   this.drawRotIcon = function(gfx) {
-    var delta = tj.DD.constants.ROT_THRESH_PX;
+    var delta = tj.DD.constants.ROT_THRESH_PX,
+        bOnRight = false;
 
     if (gfx) {
       gfx.save();
@@ -201,22 +223,12 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
 
       gfx.translate(rotIconPos.x, rotIconPos.y);
 
-      if (!rotInfo.bBottomRot && !(rotIconPos.x < gridTopLeft.x)) {
-        // Flip x.
-        gfx.scale(-1.0, -1.0);
-      }
-      else if (rotInfo.bBottomRot) {
-        if (willRotDir === tj.DD.constants.ROTDIR.CW) {
-          gfx.scale(-1.0, -1.0);
-          gfx.rotate(Math.PI * 0.5);
-        }
-        else {
-          gfx.scale(1.0, 1.0);
-          gfx.rotate(-Math.PI * 0.5);
-        }
+      bOnRight = lastPos.x > gridTopLeft.x + Math.round(tileGrid.getNumCols() * 0.5 * tileGrid.getCellSize());
+      if (bOnRight) {
+         gfx.scale(-1.0, -1.0);
       }
 
-      if (willRotDir === tj.DD.constants.ROTDIR.CW) {
+      if (rotInfo.willRotDir === tj.DD.constants.ROTDIR.CW) {
         gfx.moveTo(0, 0);
         gfx.lineTo(0, 0 - delta);
         gfx.lineTo(0 + delta, 0 - delta);
@@ -236,14 +248,6 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
       gfx.closePath();
       gfx.stroke();
 
-      if (rotInfo.bBottomRot) {
-        if (willRotDir === tj.DD.constants.ROTDIR.CW) {
-          gfx.rotate(Math.PI * 0.5);
-        }
-        else {
-          gfx.rotate(-Math.PI * 0.5);
-        }
-      }
       gfx.scale(1.0, 1.0);
       gfx.translate(-rotIconPos.x, -rotIconPos.y);
       gfx.restore();
@@ -252,7 +256,7 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
 
   this.drawPattern = function(gfx) {
     if (tileGrid && gfx) {
-      tileGrid.drawPattern(gfx, gridTopLeft.x, gridTopLeft.y);
+      tileGrid.drawPattern(gfx, Math.round(tj.Graphics.width() * tj.DD.constants.MARGIN_SCALE), Math.round(tj.Graphics.height() * (1.0 - tj.DD.constants.MARGIN_SCALE)));
     }
   };
 
@@ -397,7 +401,7 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
     this.getStatusBoxBounds();
 
     if (bWantsStatusExit && tj.MathEx.rectContainsPoint(statusBoxBounds, pos.x, pos.y)) {
-      tj.Game.sendMessage(tj.DD.strings.MSG.STATUS_MESSAGE_DISMISSED, statusMessage.pop());
+      tj.Game.sendMessage(tj.DD.strings.MSG.STATUS_MESSAGE_DISMISSED, statusMessage.shift());
 
       if (statusMessage.length === 0) {
         this.switchToPlayingHandlers();
@@ -431,7 +435,7 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
     // End any paths.
     if (bWillRot) {
       this.switchToDefaultHandlers();
-      tileGrid.rotateBoard(willRotDir);
+      tileGrid.rotateBoard(rotInfo.willRotDir);
     }
     else if (tileGrid && playerPath.isActive()) {
       if (playerPath.length() === 2) {
@@ -450,35 +454,35 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
     focusCell.bActive = false;
     rotInfo.bWantsRot = false;
     bWillRot = false;
-    willRotDir = null;
+    rotInfo.willRotDir = null;
 
     return true;
   };
 
   this.onMouseDownPlaying = function(pos) {
-    var nextToInfo = null;
+    var nextToInfo = null,
+        dx = 0,
+        dy = 0,
+        centerX = 0,
+        centerY = 0,
+        rSquared = 0,
+        cellSize = tileGrid ? tileGrid.getCellSize() : tj.DD.constants.CELL_SIZE_PX.DESIRED;
 
     rotInfo.bWantsRot = false;
     bWillRot = false;
-    willRotDir = null;
+    rotInfo.willRotDir = null;
 
     // TODO: check that the player hasn't selected an occupied spot.
-    if (pos.x < gridTopLeft.x) {
+    centerX = gridTopLeft.x + cellSize * tileGrid.getNumCols() * 0.5;
+    centerY = gridTopLeft.y + cellSize * tileGrid.getNumRows() * 0.5;
+    dx = centerX - pos.x;
+    dy = centerY - pos.y;
+    rSquared = dx * dx + dy * dy;
+
+    if (rSquared >= gridRadius * gridRadius && rSquared < (gridRadius + tj.DD.constants.ROT_CIRCLE_WIDTH) * (gridRadius + tj.DD.constants.ROT_CIRCLE_WIDTH)) {
+      // Player has touched the rotation circle.
       lastPos.x = pos.x;
       lastPos.y = pos.y;
-      rotInfo.bWantsRot = true;
-      rotInfo.bBottomRot = false;
-    }
-    else if (pos.x > gridTopLeft.x + tileGrid.width()) {
-      lastPos.x = pos.x;
-      lastPos.y = pos.y;
-      rotInfo.bBottomRot = false;
-      rotInfo.bWantsRot = true;
-    }
-    else if (pos.y > gridTopLeft. y + tileGrid.height()) {
-      lastPos.x = pos.x;
-      lastPos.y = pos.y;
-      rotInfo.bBottomRot = true;
       rotInfo.bWantsRot = true;
     }
     else if (pos.x >= gridTopLeft.x && pos.x < gridTopLeft.x + tileGrid.width() &&
@@ -492,13 +496,14 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
         lastPos.x = pos.x;
         lastPos.y = pos.y;
 
-        // FORNOW: assume the player has selected a valid starting spot.
         bWantsPath = true;
         bDragged = false;
 
         focusCell.bActive = true; 
         focusCell.row = pathStart.row;
         focusCell.col = pathStart.col;
+
+        // TODO: play a sound.
       }
       else {
         nextToInfo = tileGrid.isNextToPlayer(pathStart.row, pathStart.col);
@@ -518,6 +523,8 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
           pathStart.col = nextToInfo.col;
 
           this.startPath(focusCell.row, focusCell.col, false, pos);
+
+          // TODO: play a sound.
         }
       }
     }
@@ -528,33 +535,34 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
   this.onMouseDragPlaying = function(pos) {
     // Start (or continue) a path.
     var row = tj.DD.yToRow(pos.y, gridTopLeft.y),
-        col = tj.DD.xToCol(pos.x, gridTopLeft.x);
+        col = tj.DD.xToCol(pos.x, gridTopLeft.x),
+        centerX = 0,
+        centerY = 0,
+        dx = 0,
+        dy = 0,
+        dxLast = 0,
+        dyLast = 0,
+        cellSize = tileGrid ? tileGrid.getCellSize() : tj.DD.constants.CELL_SIZE_PX.DESIRED;
 
     focusCell.row = row;
     focusCell.col = col;
  
     if (rotInfo.bWantsRot) {
-      if (rotInfo.bBottomRot) {
-        if (!bWillRot && Math.abs(pos.x - lastPos.x) > tj.DD.constants.ROT_THRESH_PX) {
-          bWillRot = true;
-        }
+      centerX = gridTopLeft.x + cellSize * tileGrid.getNumCols() * 0.5;
+      centerY = gridTopLeft.y + cellSize * tileGrid.getNumRows() * 0.5;
+      dxLast = lastPos.x - centerX;
+      dyLast = lastPos.y - centerY;
+      dx = pos.x - centerX;
+      dy = pos.y - centerY;
 
-        if (bWillRot) {
-          willRotDir = pos.x < lastPos.x ? tj.DD.constants.ROTDIR.CW : tj.DD.constants.ROTDIR.CCW;
-          rotIconPos.x = pos.x;
-          rotIconPos.y = pos.y - tj.DD.constants.ROT_THRESH_PX;
-        }
-      }
-      else {
-        if (!bWillRot && Math.abs(pos.y - lastPos.y) > tj.DD.constants.ROT_THRESH_PX) {
-          bWillRot = true;
-        }
+      bWillRot = (dx * dxLast + dy * dyLast) / (Math.sqrt(dx * dx + dy * dy) * Math.sqrt(dxLast * dxLast + dyLast * dyLast)) < tj.DD.constants.ROT_THRESH_DOT;
 
-        if (bWillRot) {
-          willRotDir = rotDirs[lastPos.x < gridTopLeft.x ? 0 : 1][pos.y - lastPos.y > 0 ? 0 : 1];
-          rotIconPos.x = pos.x;
-          rotIconPos.y = pos.y - tj.DD.constants.ROT_THRESH_PX;
-        }
+      if (bWillRot) {
+        // Cross the lastPos into the currentPos to find willRotDir.
+        rotInfo.willRotDir = dx * dyLast - dy * dxLast > 0.0 ? tj.DD.constants.ROTDIR.CCW : tj.DD.constants.ROTDIR.CW;
+
+        rotIconPos.x = pos.x;
+        rotIconPos.y = pos.y - tj.DD.constants.ROT_THRESH_PX;
       }
     }
     else if (bDrawingPath && Math.abs(row - lastCell.row) + Math.abs(col - lastCell.col) === 1) {

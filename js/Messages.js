@@ -3,5 +3,4 @@ tj.Game.MESSAGES = {
   ABORT_GAME: "abortGame",
   LEVEL_COMPLETE: "levelComplete",
   PLAYER_DIED: "playerDied",
-  CREATE_BACKGROUND: "createBackground",
 };

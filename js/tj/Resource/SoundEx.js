@@ -35,6 +35,7 @@ tj.SoundEx.prototype.SET_MASTER_VOLUME = function(newVolume) {
   }
 };
 
+tj.SoundEx.prototype.MIN_INTERRUPT_TIME_MS = 100;
 tj.SoundEx.prototype.ALL_SOUNDS = [];
 tj.SoundEx.prototype.ADD_SOUND = function(newSound) {
   this.ALL_SOUNDS.push(newSound);
@@ -117,7 +118,7 @@ tj.SoundEx.prototype.play = function() {
 
       audio = this.channels[iChannel];
 
-      if (!audio.loop && !audio.ended) {
+      if ((!audio.loop  && playTime - this.lastPlayTime > this.MIN_INTERRUPT_TIME_MS) || audio.ended) {
         audio.pause();
         audio.load();
 
@@ -126,6 +127,8 @@ tj.SoundEx.prototype.play = function() {
 
         this.lastPlayTime = playTime;
         this.lastPlayed = iChannel;
+
+        break;
       }
 
       ++nTries;
@@ -177,21 +180,19 @@ tj.SoundEx.prototype.load = function(onLoadedCallback, onErrorCallback, observer
 
     if (observer) {
       audioClip.oncanplaythrough = function() {
+        audioClip.oncanplaythrough = null;
         self.duration = audioClip.duration;
 
         if (onLoadedCallback) {
           onLoadedCallback.call(observer, self);
         }
-
-        audioClip.oncanplaythrough = null;
       };
 
       audioClip.onerror = function() {
+        audioClip.onerror = null;
         if (onLoadedCallback) {
           onErrorCallback.call(observer, self);
         }
-
-        audioClip.onerror = null;
       }
     }
 

@@ -22,7 +22,6 @@
 
 tj.ResourcesClass = function() {
   this.requests = [];
-  this.loaded = 0;
   this.failed = 0;
 };
 
@@ -34,8 +33,19 @@ tj.ResourcesClass.prototype.getProgress = function() {
   return this.requests.length ? (this.loaded + this.failed) / this.requests.length : 1.0;
 };
 
+tj.ResourcesClass.prototype.removeRequest = function(resource) {
+  var i = 0;
+
+  for (i=0; i<this.requests.length; ++i) {
+    if (this.requests[i].resource === resource) {
+      tj.Utility.erase(this.requests, this.requests[i]);
+      break;
+    }
+  }
+};
+
 tj.ResourcesClass.prototype.onSoundLoaded = function(resource) {
-  this.loaded += 1;
+  this.removeRequest(resource);
 };
 
 tj.ResourcesClass.prototype.onSoundLoadFailed = function(resource) {
@@ -44,7 +54,7 @@ tj.ResourcesClass.prototype.onSoundLoadFailed = function(resource) {
 
 tj.ResourcesClass.prototype.onMusicTrackLoaded = function(resource) {
   tj.MusicMixer.addTrack(resource);
-  this.loaded += 1;
+  this.removeRequest(resource);
 };
 
 tj.ResourcesClass.prototype.onMusicTrackLoadFailed = function(resource) {
@@ -52,7 +62,7 @@ tj.ResourcesClass.prototype.onMusicTrackLoadFailed = function(resource) {
 };
 
 tj.ResourcesClass.prototype.onImageLoaded = function(resource) {
-  this.loaded += 1;
+  this.removeRequest(resource);
 };
 
 tj.ResourcesClass.prototype.onImageLoadFailed = function(resource) {
@@ -83,11 +93,15 @@ tj.ResourcesClass.prototype.sendRequests = function() {
 };
 
 tj.ResourcesClass.prototype.loadComplete = function() {
-  return this.loaded + this.failed === this.requests.length;
+  return this.requests.length - this.failed === 0;
 };
 
 tj.ResourcesClass.prototype.loadSuccessful = function() {
-  return this.loaded === this.requests.length;
+  return this.requests.length === 0;
+};
+
+tj.ResourcesClass.prototype.flushRequests = function() {
+  this.requests.length = 0;
 };
 
 tj.ResourcesClass.prototype.requestSound = function(url, nChannels) {

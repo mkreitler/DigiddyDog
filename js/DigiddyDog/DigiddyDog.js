@@ -7,7 +7,17 @@ tj.DigiddyDog = function() {
   this.logoImage = null,
   this.cellSize = 32,
   this.gemImages = {},
+  this.playerImages = {},
+  this.rockImages = {},
   this.statusMsgAnchor = {x:0, y:0};
+  this.rotateSound = null;
+  this.squishSound = null;
+  this.pickupSound = null;
+  this.fallSound = null;
+  this.moveSound = null;
+  this.infoCloseSound = null;
+  this.infoSound = null;
+  this.collectSound = null;
 
   this.init();
 };
@@ -30,6 +40,16 @@ tj.DigiddyDog.prototype.init = function() {
 
   tj.Game.addListener(this, tj.Game.MESSAGES.START_GAME);
   tj.Game.addListener(this, tj.Game.MESSAGES.ABORT_GAME);
+  tj.Game.addListener(this, tj.DD.strings.MSG.RENDER_BACKGROUND);
+
+  tj.Game.addListener(this, tj.DD.strings.MSG.PLAY_SOUND_ROTATE);
+  tj.Game.addListener(this, tj.DD.strings.MSG.PLAY_SOUND_SQUISH);
+  tj.Game.addListener(this, tj.DD.strings.MSG.PLAY_SOUND_PICKUP);
+  tj.Game.addListener(this, tj.DD.strings.MSG.PLAY_SOUND_MOVE);
+  tj.Game.addListener(this, tj.DD.strings.MSG.PLAY_SOUND_INFO_CLOSE);
+  tj.Game.addListener(this, tj.DD.strings.MSG.PLAY_SOUND_INFO);
+  tj.Game.addListener(this, tj.DD.strings.MSG.PLAY_SOUND_COLLECT);
+  tj.Game.addListener(this, tj.DD.strings.MSG.PLAY_SOUND_FALL);
 
   this.game.setState(new tj.DigiddyDog.StateResourceLoad(this));
 
@@ -47,6 +67,15 @@ tj.DigiddyDog.prototype.strings = {
         RESUME_PLAY: "resumePlay",
         STATUS_MESSAGE_DISMISSED: "statusMessageDismissed",
         ADD_STATUS_MESSAGE: "addStatusMessage",
+        RENDER_BACKGROUND: "renderBackground",
+        PLAY_SOUND_ROTATE: "playSoundRotate",
+        PLAY_SOUND_SQUISH: "playSoundSquish",
+        PLAY_SOUND_PICKUP: "playSoundPickup",
+        PLAY_SOUND_MOVE: "playSoundMove",
+        PLAY_SOUND_INFO_CLOSE: "playSoundInfoClose",
+        PLAY_SOUND_INFO: "playSoundInfo",
+        PLAY_SOUND_COLLECT: "playSoundCollect",
+        PLAY_SOUND_FALL: "playSoundFall",
   },
 
   LEVEL_MSG: {
@@ -61,7 +90,7 @@ tj.DigiddyDog.prototype.strings = {
 
     LEVEL_FIVE: ["If a rock falls on Digiddy, he will lose a life."],
 
-    LEVEL_SIX: ["Digiddy can't swap places with black rocks."],
+    LEVEL_NINE: ["Slabs are too heavy for Digiddy to move."],
   },
 
   LEVEL_MSG_ALT: {
@@ -88,7 +117,7 @@ tj.DigiddyDog.prototype.constants = {
   TYPE: {PLAYER: "dog",
          GEM: "gem",
          ROCK: "rock",
-         SOLID_ROCK: "solidRock"},
+         SLAB: "slab"},
   MAX_CELLS_PER_PATH: 7,
   SWAP_TIME: 0.25,
   FALL_TIME: 0.15,
@@ -103,6 +132,9 @@ tj.DigiddyDog.prototype.constants = {
   STATUS_MESSAGE_ANCHOR_X_FACTOR: 0.8,
   STATUS_MESSAGE_ANCHOR_Y_FACTOR: 0.0,
   MESSAGE_WINDOW_HEIGHT_OFFSET: 1.0,
+  ROT_CIRCLE_WIDTH: Math.round(tj.Graphics.width() * 1.0 / 33.0),
+  ROT_CIRCLE_COLOR: "rgba(255, 255, 0, 0.25)",
+  ROT_THRESH_DOT: Math.cos(Math.PI * 15.0 / 180.0),  // 15 degree tolerance 
 
   DEFAULT_MAX_TYPE: 4,
   MAX_NORMAL_TILE_TYPE: 6,  // Normal tiles have indices 0-5
@@ -133,10 +165,71 @@ tj.DigiddyDog.prototype.drawLogo = function(gfx) {
 };
 
 tj.DigiddyDog.prototype.startGame = function() {
-  tj.Game.addListener(this, tj.Game.MESSAGES.CREATE_BACKGROUND);
-  tj.Game.addListener(this, tj.DD.strings.MSG.DRAW_LOGO);
-
   this.game.setState(new tj.DigiddyDog.StateLevelTest(this, this.statusMsgAnchor));
+};
+
+tj.DigiddyDog.prototype.playSoundRotate = function(dataIn) {
+  if (this.rotateSound) {
+    this.rotateSound.play();
+  }
+
+  return true;
+};
+
+tj.DigiddyDog.prototype.playSoundSquish = function(dataIn) {
+  if (this.squishSound) {
+    this.squishSound.play();
+  }
+
+  return true;
+};
+
+tj.DigiddyDog.prototype.playSoundPickup = function(dataIn) {
+  if (this.pickupSound) {
+    this.pickupSound.play();
+  }
+
+  return true;
+};
+
+tj.DigiddyDog.prototype.playSoundMove = function(dataIn) {
+  if (this.moveSound) {
+    this.moveSound.play();
+  }
+
+  return true;
+};
+
+tj.DigiddyDog.prototype.playSoundInfoClose = function(dataIn) {
+  if (this.infoCloseSound) {
+    this.infoCloseSound.play();
+  }
+
+  return true;
+};
+
+tj.DigiddyDog.prototype.playSoundInfo = function(dataIn) {
+  if (this.infoSound) {
+    this.infoSound.play();
+  }  
+
+  return true;
+};
+
+tj.DigiddyDog.prototype.playSoundCollect = function(dataIn) {
+  if (this.collectSound) {
+    this.collectSound.play();
+  }
+
+  return true;
+};
+
+tj.DigiddyDog.prototype.playSoundFall = function(dataIn) {
+  if (this.fallSound) {
+    this.fallSound.play();
+  }
+
+  return true;
 };
 
 tj.DigiddyDog.prototype.abortGame = function(errMsg) {
@@ -164,24 +257,84 @@ tj.DigiddyDog.prototype.setGemImages = function(gemsDesired, gemsLarge, gemsMedi
   tj.DigiddyDog.TileClass.setGemImages(this.gemImages);
 };
 
+tj.DigiddyDog.prototype.setPlayerImages = function(desired, large, medium, small) {
+  this.playerImages["" + tj.DD.constants.CELL_SIZE_PX.DESIRED] = desired;
+  this.playerImages["" + tj.DD.constants.CELL_SIZE_PX.LARGE] = large;
+  this.playerImages["" + tj.DD.constants.CELL_SIZE_PX.MEDIUM] = medium;
+  this.playerImages["" + tj.DD.constants.CELL_SIZE_PX.SMALL] = small;
+
+  tj.DigiddyDog.TileClass.setPlayerImages(this.playerImages);
+};
+
+tj.DigiddyDog.prototype.setRockImages = function(desired, large, medium, small) {
+  this.rockImages["" + tj.DD.constants.CELL_SIZE_PX.DESIRED] = desired;
+  this.rockImages["" + tj.DD.constants.CELL_SIZE_PX.LARGE] = large;
+  this.rockImages["" + tj.DD.constants.CELL_SIZE_PX.MEDIUM] = medium;
+  this.rockImages["" + tj.DD.constants.CELL_SIZE_PX.SMALL] = small;
+
+  tj.DigiddyDog.TileClass.setRockImages(this.rockImages);
+};
+
+tj.DigiddyDog.prototype.setCollectSound = function(sound) {
+  this.collectSound = sound;
+  if (this.collectSound) {
+    this.collectSound.setVolume(0.1);
+  }
+};
+
+tj.DigiddyDog.prototype.setFallSound = function(sound) {
+  this.fallSound = sound;
+};
+
+tj.DigiddyDog.prototype.setInfoSound = function(sound) {
+  this.infoSound = sound;
+};
+
+tj.DigiddyDog.prototype.setInfoCloseSound = function(sound) {
+  this.infoCloseSound = sound;
+};
+
+tj.DigiddyDog.prototype.setMoveSound = function(sound) {
+  this.moveSound = sound;
+  if (this.moveSound) {
+    this.moveSound.setVolume(0.1);
+  }
+};
+
+tj.DigiddyDog.prototype.setPickupSound = function(sound) {
+  this.pickupSound = sound;
+};
+
+tj.DigiddyDog.prototype.setSquishSound = function(sound) {
+  this.squishSound = sound;
+  if (this.squishSound) {
+    this.squishSound.setVolume(0.25);
+  }
+};
+
+tj.DigiddyDog.prototype.setRotateSound = function(sound) {
+  this.rotateSound = sound;
+};
+
 tj.DigiddyDog.prototype.createBackBuffer = function() {
   this.backBuffer = tj.Graphics.newBuffer(tj.Graphics.width(), tj.Graphics.height() * tj.DD.constants.MARGIN_SCALE);
 
   return this.backBuffer;
 };
 
-tj.DigiddyDog.prototype.createBackground = function(cellSize) {
-  this.cellSize = cellSize;
-  this.drawBackBufferBackground(cellSize);
+tj.DigiddyDog.prototype.renderBackground = function(dimensions) {
+  this.cellSize = dimensions.cellSize;
+  this.drawBackBufferBackground(dimensions.rows, dimensions.cols);
 };
 
-tj.DigiddyDog.prototype.drawBackBufferBackground = function() {
+tj.DigiddyDog.prototype.drawBackBufferBackground = function(nRows, nCols) {
   var rows = 0,
       cols = 0,
       iRow = 0,
       iCol = 0,
       x = 0,
       y = 0,
+      r = 0,
       top = 0,
       left = 0,
       cellWidth = 0,
@@ -225,6 +378,17 @@ tj.DigiddyDog.prototype.drawBackBufferBackground = function() {
 
     gfx.closePath();
     gfx.fill();
+
+    // Rotation circle.
+    x = Math.round(this.backBuffer.width * 0.5);
+    y = Math.round(this.backBuffer.height * 0.5);
+    r = Math.round(Math.max(nRows, nCols) * this.cellSize * 0.5 * Math.sqrt(2));
+    gfx.lineWidth = this.constants.ROT_CIRCLE_WIDTH;
+    gfx.strokeStyle = this.constants.ROT_CIRCLE_COLOR;
+    gfx.beginPath();
+    gfx.arc(x, y, r + Math.round(gfx.lineWidth * 0.5), 0, 2.0 * Math.PI, true);
+    gfx.closePath();
+    gfx.stroke();
 
     if (this.headImage) {
       x = Math.round(this.headImage.width() * 0.1);

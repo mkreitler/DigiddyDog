@@ -21,6 +21,7 @@ tj.DigiddyDog.TileGrid = function(levelInfo) {
   this.pathCells = [];
   this.nRows = 0;
   this.nCols = 0;
+  this.bPlayCollapseSound = true;
   this.bPlayerKilled = true;
 
   // setUpdate must precede buildLevel because build level causes a
@@ -47,8 +48,8 @@ tj.DigiddyDog.TileGrid.prototype.statusMessageDismissed = function(oldMsg) {
       tj.Game.sendMessage(tj.DD.strings.MSG.ADD_STATUS_MESSAGE, this.levelInfo.messages[this.levelStatusIndex]);
       this.levelStatusIndex += 1;
     }
-    else if (this.secondaryMessageIndex >= 0 && this.levelInfo.secondaryMessages && this.levelInfo.secondaryMessages.length > this.secondaryMessageIndex) {
-
+    else {
+      tj.Game.sendMessage(tj.DD.strings.MSG.PLAY_SOUND_INFO_CLOSE);
     }
   }
 };
@@ -60,6 +61,7 @@ tj.DigiddyDog.TileGrid.prototype.setOrigin = function(x, y) {
 
 tj.DigiddyDog.TileGrid.prototype.setUpdate = function(nextUpdate) {
   if (nextUpdate === this.updateDefault) {
+    this.bPlayCollapseSound = true;
     tj.Game.sendMessage(tj.DD.strings.MSG.RESUME_PLAY, null);
   }
 
@@ -102,6 +104,8 @@ tj.DigiddyDog.TileGrid.prototype.nextLeg = function() {
     this.moveInfo.elapsedTime = 0;
 
     nextUpdate = this.updateConsumeGems;
+
+    tj.Game.sendMessage(tj.DD.strings.MSG.PLAY_SOUND_COLLECT);
   }
   else {
     // All legs complete.
@@ -160,6 +164,10 @@ tj.DigiddyDog.TileGrid.prototype.collapse = function() {
   if (!bCollapsing) {
     this.sendSecondaryMessage();
   }
+  else if (this.bPlayCollapseSound) {
+    this.bPlayCollapseSound = false;
+    tj.Game.sendMessage(tj.DD.strings.MSG.PLAY_SOUND_FALL);
+  }
 
   return bCollapsing ? this.updateCollapse : this.updateDefault;
 };
@@ -185,6 +193,8 @@ tj.DigiddyDog.TileGrid.prototype.movePlayer = function(fromRow, fromCol, toRow, 
       this.moveInfo.toTile = toTile;
       this.moveInfo.elapsedTime = 0;
       this.setUpdate(this.updateSwapPlayerPosition);
+
+      tj.Game.sendMessage(tj.DD.strings.MSG.PLAY_SOUND_MOVE);
     }
   }
 };
@@ -268,14 +278,15 @@ tj.DigiddyDog.TileGrid.prototype.draw = function(gfx) {
   }
 };
 
-tj.DigiddyDog.TileGrid.prototype.drawPattern = function(gfx, left, top) {
+tj.DigiddyDog.TileGrid.prototype.drawPattern = function(gfx, right, top) {
   var i = 0,
-      x = this.origin.x + Math.round(this.origin.width * 0.5);
-      y = this.origin.y - Math.round(this.origin.height * 0.5);
-      width = tj.Graphics.width() - x,
-      cellSize = this.computeCellSize(width / this.pattern.length);
+      x = right,
+      y = top,
+      width = tj.Graphics.width() - this.origin.x + Math.round(this.origin.width * 0.5),
+      cellSize = this.computeCellSize(width / this.pattern.length),
+      left = right - width;
 
-  x = x + Math.round(width * 0.5 - cellSize * this.pattern.length * 0.5);
+  x -= Math.round(cellSize * this.pattern.length + tj.DD.constants.BORDER_WIDTH);
   width = cellSize * this.pattern.length;
 
   if (gfx && this.pattern) {
@@ -440,7 +451,7 @@ tj.DigiddyDog.TileGrid.prototype.buildLevel = function(levelInfo) {
       x = this.xLocalFromCol(cell.col);
       y = this.yLocalFromRow(cell.row);
 
-      this.rows[cell.row][cell.col].tile = new tj.DigiddyDog.Tile(tj.DD.constants.TYPE.SOLID_ROCK, cell.row, cell.col, x, y, "l");
+      this.rows[cell.row][cell.col].tile = new tj.DigiddyDog.Tile(tj.DD.constants.TYPE.SLAB, cell.row, cell.col, x, y, "l");
       tj.Utility.fastErase(cells, cell);
     }
 
@@ -455,6 +466,7 @@ tj.DigiddyDog.TileGrid.prototype.buildLevel = function(levelInfo) {
   this.bPlayerKilled = false;
   this.rotInfo.bWantsRotate = false;
   this.secondaryMessageIndex = -1;
+  this.bPlayCollapseSound = true;
 };
 
 tj.DigiddyDog.TileGrid.prototype.updateDefault = function(dt) {
@@ -462,6 +474,7 @@ tj.DigiddyDog.TileGrid.prototype.updateDefault = function(dt) {
     tj.Game.sendMessage(tj.Game.MESSAGES.PLAYER_DIED);
   }
   else if (this.rotInfo.bWantsRotate) {
+    tj.Game.sendMessage(tj.DD.strings.MSG.PLAY_SOUND_ROTATE);
     this.setUpdate(this.updateRotateBoard);
   }
   else if (this.bLevelComplete) {
@@ -682,6 +695,10 @@ tj.DigiddyDog.TileGrid.prototype.checkForPlayerDeath = function(playerTile) {
     if (this.isValid(playerRow - 1, playerCol)) {
       tileAbove = this.rows[playerRow - 1][playerCol].tile;
       if (tileAbove && tileAbove.squishesPlayer() && tileAbove.isFalling()) {
+        if (!this.bPlayerKilled) {
+          tj.Game.sendMessage(tj.DD.strings.MSG.PLAY_SOUND_SQUISH);
+        }
+
         // Player was hit from above by a rock.
         this.bPlayerKilled = true;
       }
@@ -822,6 +839,14 @@ tj.DigiddyDog.TileGrid.prototype.width = function() {
 
 tj.DigiddyDog.TileGrid.prototype.height = function() {
   return this.gridBuffer ? this.gridBuffer.height : 0;
+};
+
+tj.DigiddyDog.TileGrid.prototype.getNumRows = function() {
+  return this.nRows;
+};
+
+tj.DigiddyDog.TileGrid.prototype.getNumCols = function() {
+  return this.nCols;
 };
 
 tj.DigiddyDog.TileGrid.prototype.buildGrid = function(rows, cols) {
