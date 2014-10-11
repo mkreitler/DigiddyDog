@@ -41,6 +41,7 @@ tj.DigiddyDog.prototype.init = function() {
   tj.Game.addListener(this, tj.Game.MESSAGES.START_GAME);
   tj.Game.addListener(this, tj.Game.MESSAGES.ABORT_GAME);
   tj.Game.addListener(this, tj.DD.strings.MSG.RENDER_BACKGROUND);
+  tj.Game.addListener(this, tj.DD.strings.MSG.DRAW_LOGO);
 
   tj.Game.addListener(this, tj.DD.strings.MSG.PLAY_SOUND_ROTATE);
   tj.Game.addListener(this, tj.DD.strings.MSG.PLAY_SOUND_SQUISH);
