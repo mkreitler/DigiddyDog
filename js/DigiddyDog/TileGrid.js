@@ -40,12 +40,12 @@ tj.DigiddyDog.TileGrid = function(levelInfo) {
 // Prototype Functions ////////////////////////////////////////////////////////
 tj.DigiddyDog.TileGrid.prototype.statusMessageDismissed = function(oldMsg) {
   if (this.levelInfo) {
-    if (this.levelInfo.secondaryMessages && this.secondaryMessageIndex >= 0 && this.levelInfo.secondaryMessages.length > this.secondaryMessageIndex) {
-      tj.Game.sendMessage(tj.DD.strings.MSG.ADD_STATUS_MESSAGE, this.levelInfo.secondaryMessages[this.secondaryMessageIndex]);
+    if (this.levelInfo.secondaryMessageKey && this.secondaryMessageIndex >= 0 && tj.DD.levelMessagesAlt[this.levelInfo.secondaryMessageKey].length > this.secondaryMessageIndex) {
+      tj.Game.sendMessage(tj.DD.strings.MSG.ADD_STATUS_MESSAGE, tj.DD.levelMessagesAlt[this.levelInfo.secondaryMessageKey][this.secondaryMessageIndex]);
       this.secondaryMessageIndex += 1;
     }
-    else if (this.levelInfo.messages && this.levelInfo.messages.length > this.levelStatusIndex) {
-      tj.Game.sendMessage(tj.DD.strings.MSG.ADD_STATUS_MESSAGE, this.levelInfo.messages[this.levelStatusIndex]);
+    else if (this.levelInfo.messageKey && tj.DD.levelMessages[this.levelInfo.messageKey].length > this.levelStatusIndex) {
+      tj.Game.sendMessage(tj.DD.strings.MSG.ADD_STATUS_MESSAGE, tj.DD.levelMessages[this.levelInfo.messageKey][this.levelStatusIndex]);
       this.levelStatusIndex += 1;
     }
     else {
@@ -300,7 +300,8 @@ tj.DigiddyDog.TileGrid.prototype.drawPattern = function(gfx, right, top) {
     gfx.stroke();
 
     y += Math.round(cellSize * 0.33);
-    tj.Graphics.print(gfx, tj.DD.strings.PATTERN, x + Math.round(width * 0.5), y, "white", tj.DD.constants.DROP_TEXT_OFFSET);
+//    tj.Graphics.print(gfx, tj.DD.strings.PATTERN, x + Math.round(width * 0.5), y, "white", tj.DD.constants.DROP_TEXT_OFFSET);
+    tj.DD.printMedium(gfx, tj.DD.strings.PATTERN, x + Math.round(width * 0.5), y);
     y += cellSize;
     x += Math.round(cellSize * 0.5);
 
@@ -392,9 +393,9 @@ tj.DigiddyDog.TileGrid.prototype.buildLevel = function(levelInfo) {
   bRandomLevel = this.levelInfo ? this.levelInfo.bRandomLevel || false : true;
   nSolidRocks = this.levelInfo ? this.levelInfo.solidRocks || 0 : 0;
 
-  if (this.levelInfo && this.levelInfo.messages && this.levelInfo.messages.length > 0) {
+  if (this.levelInfo && this.levelInfo.messageKey) {
     this.levelStatusIndex = 1;
-    statusMessage = this.levelInfo.messages[0];
+    statusMessage = tj.DD.levelMessages[levelInfo.messageKey][0];
   }
   else {
     statusNessage = null;

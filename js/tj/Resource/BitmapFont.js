@@ -1,7 +1,7 @@
 // Modified from Dominic Szablewski's Impact engine (www.impactjs.com),
 // version 1.23.
 
-tj.BitmapFont = function(image) {
+tj.BitmapFont = function(url) {
 	this.widthMap = [];
 	this.indices = [];
 	this.firstChar = 32;
@@ -15,11 +15,34 @@ tj.BitmapFont = function(image) {
 	this.extImages = [];
 	this.extBreakpoints = [];
 	this.nLoaded = 0;
-	this.metricsOut = {width=0, height=0};
+	this.metricsOut = {width: 0, height: 0};
+	this.url = url;
 };
 
-tj.BitmapFont.prototype.addImage = function(image) {
-	this.extImages.push(image);
+tj.BitmapFont.prototype.addImage = function(imageEx) {
+	this.extImages.push(imageEx.image);
+};
+
+tj.BitmapFont.prototype.load = function(loadedCallback, errorCallback, observer) {
+	var urlList = this.url instanceof Array ? this.url : [],
+			newImage = null,
+			self = this,
+			i = 0;
+
+	if (urlList.length === 0 && typeof(this.url) === "string") {
+		urlList.push(this.url);
+	}
+
+	for (i=0; i<urlList.length; ++i) {
+		newImage = new tj.ImageEx(urlList[i]);
+		this.addImage(newImage);
+
+		newImage.load(function(image) {
+			if (self.onLoad(image)) {
+				loadedCallback.call(observer, self);
+			}
+		}, errorCallback, observer);
+	}
 };
 
 tj.BitmapFont.prototype.onLoad = function(image) {
@@ -29,6 +52,8 @@ tj.BitmapFont.prototype.onLoad = function(image) {
 		this._loadMetrics();
 		this.loaded = true;
 	}
+
+	return this.loaded;
 };
 
 tj.BitmapFont.prototype._loadMetrics = function( ) {
@@ -87,6 +112,8 @@ tj.BitmapFont.prototype._loadMetrics = function( ) {
 
 tj.BitmapFont.prototype.draw = function( gfx, text, x, y, align, vAlign ) {
 	var vertAlign = (1 - (vAlign || 0.5)) * (this.height + this.lineSpacing);
+
+	align = align || tj.BitmapFont.ALIGN.CENTER;
 
 	if( typeof(text) != 'string' ) {
 		text = text.toString();

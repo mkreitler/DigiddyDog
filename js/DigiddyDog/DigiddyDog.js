@@ -1,14 +1,14 @@
 tj.DigiddyDog = function() {
   tj.DD = this;
 
-  this.blocksImage = null,
-  this.backBuffer = null,
-  this.headImage = null,
-  this.logoImage = null,
-  this.cellSize = 32,
-  this.gemImages = {},
-  this.playerImages = {},
-  this.rockImages = {},
+  this.blocksImage = null;
+  this.backBuffer = null;
+  this.headImage = null;
+  this.logoImage = null;
+  this.cellSize = 32;
+  this.gemImages = {};
+  this.playerImages = {};
+  this.rockImages = {};
   this.statusMsgAnchor = {x:0, y:0};
   this.rotateSound = null;
   this.squishSound = null;
@@ -18,6 +18,7 @@ tj.DigiddyDog = function() {
   this.infoCloseSound = null;
   this.infoSound = null;
   this.collectSound = null;
+  this.stateLevelTest = null;
 
   this.init();
 };
@@ -54,6 +55,9 @@ tj.DigiddyDog.prototype.init = function() {
 
   this.game.setState(new tj.DigiddyDog.StateResourceLoad(this));
 
+  this.levelMessages = null;
+  this.levelMessagesAlt = null;
+
   this.game.start();
 };
 
@@ -89,6 +93,9 @@ tj.DigiddyDog.prototype.strings = {
                 "On this level, the pattern is 'red, green, green, red'.",
                 "The 'pattern' box on the right always shows the pattern for the level."],
 
+    LEVEL_THREE:["You can earn combos by clearing consecutive patterns without swapping.",
+               "Try it: clear two or more patterns without swapping adjacent gems."],
+
     LEVEL_FIVE: ["If a rock falls on Digiddy, he will lose a life."],
 
     LEVEL_NINE: ["Slabs are too heavy for Digiddy to move."],
@@ -97,7 +104,7 @@ tj.DigiddyDog.prototype.strings = {
   LEVEL_MSG_ALT: {
     LEVEL_ONE:["If you get stuck, you can swap adjacent gems and rotate the board.",
                "To swap, tap above, below, left, or right of Digiddy.",
-               "To rotate, drag outside the left, right, or bottom border."],
+               "To rotate, drag around the outer circle."],
   },
 };
 
@@ -108,6 +115,9 @@ tj.DigiddyDog.prototype.constants = {
                  LARGE: 40,
                  MEDIUM: 32,
                  SMALL: 16},
+  FONTS: {WHITE_64: null,
+          WHITE_32: null,
+          WHITE_20: null},
   BACK_COLOR: "#bbaa44",
   DIRT_COLOR: "#443300",
   COLOR_MISSING: "#ff00ff",
@@ -136,6 +146,7 @@ tj.DigiddyDog.prototype.constants = {
   ROT_CIRCLE_WIDTH: Math.round(tj.Graphics.width() * 1.0 / 33.0),
   ROT_CIRCLE_COLOR: "rgba(255, 255, 0, 0.25)",
   ROT_THRESH_DOT: Math.cos(Math.PI * 15.0 / 180.0),  // 15 degree tolerance 
+  FORMAT_MARGIN: 0.95,
 
   DEFAULT_MAX_TYPE: 4,
   MAX_NORMAL_TILE_TYPE: 6,  // Normal tiles have indices 0-5
@@ -154,6 +165,73 @@ tj.DigiddyDog.prototype.constants = {
         RIGHT: 1},
 };
 
+tj.DigiddyDog.prototype.formatLevelMessages = function() {
+  var key = null,
+      i = 0,
+      bounds = this.stateLevelTest.getStatusBoxBounds();
+
+  this.levelMessages = {};
+  this.levelMessagesAlt = {};
+
+  for (key in this.strings.LEVEL_MSG) {
+    if (this.strings.LEVEL_MSG[key]) {
+      this.levelMessages[key] = [];
+      for (i=0; i<this.strings.LEVEL_MSG[key].length; ++i) {
+        this.levelMessages[key].push(this.formatMessage(this.strings.LEVEL_MSG[key][i], bounds, tj.DD.constants.FONTS.WHITE_32));
+      }
+    }
+  }
+
+  for (key in this.strings.LEVEL_MSG_ALT) {
+    if (this.strings.LEVEL_MSG_ALT[key]) {
+      this.levelMessagesAlt[key] = [];
+      for (i=0; i<this.strings.LEVEL_MSG_ALT[key].length; ++i) {
+        this.levelMessagesAlt[key].push(this.formatMessage(this.strings.LEVEL_MSG_ALT[key][i], bounds, tj.DD.constants.FONTS.WHITE_32));
+      }
+    }
+  }
+};
+
+tj.DigiddyDog.prototype.formatMessage = function(strIn, bounds, font) {
+  var i = 0,
+      curStr = "",
+      out = [],
+      words = strIn ? strIn.match(/\S+/g) : null;
+      spaceSize = font ? font.measureText(" ").width : {width:10, height: 10},
+      strSize = font ? font.measureText("").width : {width:0, height: 0},
+      wordSize = font ? font.measureText("").width : {width: 0, height: 0},
+      maxWidth = bounds ? Math.round(bounds.w * tj.DD.constants.FORMAT_MARGIN) : 20;
+
+  if (words && bounds && font) {
+    for (i=0; i<words.length; ++i) {
+      wordSize = font.measureText(words[i]).width;
+
+      if (strSize === 0 || strSize + spaceSize + wordSize < maxWidth) {
+        // Add the word.
+        if (strSize === 0) {
+          curStr = words[i];
+        }
+        else {
+          curStr += " " + words[i];
+        }
+      }
+      else {
+        // Push the line and start a new one.
+        out.push(curStr);
+        curStr = words[i];
+      }
+
+      strSize = font.measureText(curStr).width;
+    }
+
+    if (curStr) {
+      out.push(curStr);
+    }
+  }
+
+  return out;
+};
+
 tj.DigiddyDog.prototype.drawLogo = function(gfx) {
   var x = 0,
       y = 0;
@@ -165,8 +243,75 @@ tj.DigiddyDog.prototype.drawLogo = function(gfx) {
   }
 };
 
+tj.DigiddyDog.prototype.setFontLarge = function(theFont) {
+  tj.DD.constants.FONTS.WHITE_64 = theFont;
+};
+
+tj.DigiddyDog.prototype.setFontMedium = function(theFont) {
+  tj.DD.constants.FONTS.WHITE_32 = theFont;
+};
+
+tj.DigiddyDog.prototype.setFontSmall = function(theFont) {
+  tj.DD.constants.FONTS.WHITE_20 = theFont;
+};
+
+tj.DigiddyDog.prototype.printLarge = function(gfx, text, x, y, hAlign, vAlign) {
+  var i = 0,
+      dy = 0,
+      fontHeight = tj.DD.constants.FONTS.WHITE_64.heightForString(" ");
+
+  if (text instanceof Array) {
+    dy = Math.round(fontHeight * (text.length * 0.5 - 0.5));
+
+    for (i=0; i<text.length; ++i) {
+      tj.DD.constants.FONTS.WHITE_64.draw(gfx, text[i], x, y - dy + i * fontHeight , hAlign, vAlign);
+    }
+  }
+  else {
+    tj.DD.constants.FONTS.WHITE_64.draw(gfx, text, x, y, hAlign, vAlign);
+  }
+};
+
+tj.DigiddyDog.prototype.printMedium = function(gfx, text, x, y, hAlign, vAlign) {
+  var i = 0,
+      dy = 0,
+      fontHeight = tj.DD.constants.FONTS.WHITE_32.heightForString(" ");
+
+  if (text instanceof Array) {
+    dy = Math.round(fontHeight * (text.length * 0.5 - 0.5));
+
+    for (i=0; i<text.length; ++i) {
+      tj.DD.constants.FONTS.WHITE_32.draw(gfx, text[i], x, y - dy + i * fontHeight , hAlign, vAlign);
+    }
+  }
+  else {
+    tj.DD.constants.FONTS.WHITE_32.draw(gfx, text, x, y, hAlign, vAlign);
+  }
+};
+
+tj.DigiddyDog.prototype.printSmall = function(gfx, text, x, y, hAlign, vAlign) {
+  var i = 0,
+      dy = 0,
+      fontHeight = tj.DD.constants.FONTS.WHITE_20.heightForString(" ");
+
+  if (text instanceof Array) {
+    dy = Math.round(fontHeight * (text.length * 0.5 - 0.5));
+
+    for (i=0; i<text.length; ++i) {
+      tj.DD.constants.FONTS.WHITE_20.draw(gfx, text[i], x, y - dy + i * fontHeight , hAlign, vAlign);
+    }
+  }
+  else {
+    tj.DD.constants.FONTS.WHITE_20.draw(gfx, text, x, y, hAlign, vAlign);
+  }
+};
+
 tj.DigiddyDog.prototype.startGame = function() {
-  this.game.setState(new tj.DigiddyDog.StateLevelTest(this, this.statusMsgAnchor));
+  this.stateLevelTest = new tj.DigiddyDog.StateLevelTest(this, this.statusMsgAnchor);
+
+  this.formatLevelMessages(this.stateLevelTest);
+
+  this.game.setState(this.stateLevelTest);
 };
 
 tj.DigiddyDog.prototype.playSoundRotate = function(dataIn) {

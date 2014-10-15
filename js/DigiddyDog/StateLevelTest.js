@@ -26,16 +26,16 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
       statusMessage = [],
 
       levelInfo = [
-        {rows: 3, cols: 3, pattern: "rrrr", solidRocks: 0, bRandomLevel: true, messages: tj.DD.strings.LEVEL_MSG.LEVEL_ONE, secondaryMessages: tj.DD.strings.LEVEL_MSG_ALT.LEVEL_ONE},
-        {rows: 3, cols: 3, pattern: "rggr", solidRocks: 0, bRandomLevel: true, messages: tj.DD.strings.LEVEL_MSG.LEVEL_TWO},
-        {rows: 3, cols: 3, pattern: "gbrr", solidRocks: 0, bRandomLevel: true},
+        {rows: 3, cols: 3, pattern: "rrrr", solidRocks: 0, bRandomLevel: true, messageKey: "LEVEL_ONE", secondaryMessageKey: "LEVEL_ONE"},
+        {rows: 3, cols: 3, pattern: "rggr", solidRocks: 0, bRandomLevel: true, messageKey: "LEVEL_TWO"},
+        {rows: 3, cols: 3, pattern: "gbrr", solidRocks: 0, bRandomLevel: true, messageKey: "LEVEL_THREE"},
         {rows: 3, cols: 3, pattern: "ygbr", solidRocks: 0, bRandomLevel: true},
 
-        {rows: 4, cols: 4, pattern: "rryr", solidRocks: 0, bRandomLevel: true, messages: tj.DD.strings.LEVEL_MSG.LEVEL_FIVE},
+        {rows: 4, cols: 4, pattern: "rryr", solidRocks: 0, bRandomLevel: true, messageKey: "LEVEL_FIVE"},
         {rows: 4, cols: 4, pattern: "bbgg", solidRocks: 0, bRandomLevel: true},
         {rows: 4, cols: 4, pattern: "ybyg", solidRocks: 0, bRandomLevel: true},
         {rows: 4, cols: 4, pattern: "rgby", solidRocks: 0, bRandomLevel: true},
-        {rows: 4, cols: 4, pattern: "bryg", solidRocks: 1, bRandomLevel: true, messages: tj.DD.strings.LEVEL_MSG.LEVEL_NINE},
+        {rows: 4, cols: 4, pattern: "bryg", solidRocks: 1, bRandomLevel: true, messageKey: "LEVEL_NINE"},
         {rows: 4, cols: 4, pattern: "gybr", solidRocks: 2, bRandomLevel: true},
         
         {rows: 5, cols: 5, pattern: "brrr", solidRocks: 0, bRandomLevel: true},
@@ -163,7 +163,7 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
       }
 
       if (statusMessage.length > 0) {
-        this.showStatusMessage(gfx);
+        this.drawStatusMessage(gfx);
       }
 
       tj.Game.sendMessage(tj.DD.strings.MSG.DRAW_LOGO, gfx);
@@ -184,7 +184,7 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
     return statusBoxBounds;
   };
 
-  this.showStatusMessage = function(gfx) {
+  this.drawStatusMessage = function(gfx) {
     var origin = tileGrid ? tileGrid.getOrigin() : null,
         msgBoxBounds = this.getStatusBoxBounds(),
         x = msgBoxBounds.x,
@@ -206,7 +206,7 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
       gfx.fill();
       gfx.stroke();
 
-      tj.Graphics.print(gfx, statusMessage[0], origin.x, y + Math.round(h * 0.5), "white", tj.DD.constants.DROP_TEXT_OFFSET);
+      tj.DD.printMedium(gfx, statusMessage[0], x + Math.round(w * 0.5), y + Math.round(h * 0.5));
     }
   };
 
