@@ -152,7 +152,7 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
       this.drawGrid(gfx, backBuffer);
       tileGrid.draw(gfx);
 
-      this.drawPattern(gfx);
+      this.drawRightGUI(gfx);
 
       if (focusCell.bActive) {
         this.drawFocusCell(gfx);
@@ -254,9 +254,9 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
     }
   };
 
-  this.drawPattern = function(gfx) {
+  this.drawRightGUI = function(gfx) {
     if (tileGrid && gfx) {
-      tileGrid.drawPattern(gfx, Math.round(tj.Graphics.width() * tj.DD.constants.MARGIN_SCALE), Math.round(tj.Graphics.height() * (1.0 - tj.DD.constants.MARGIN_SCALE)));
+      tileGrid.drawRightGUI(gfx, Math.round(tj.Graphics.width() * tj.DD.constants.MARGIN_SCALE), Math.round(tj.Graphics.height() * (1.0 - tj.DD.constants.MARGIN_SCALE)));
     }
   };
 

@@ -66,6 +66,8 @@ tj.DigiddyDog.prototype.strings = {
   LEVEL_PREFIX: "Level",
   READY: "Ready",
   PATTERN: "Pattern",
+  SCORE: "Score",
+  COMBO: "Combo",
 
   // Messages
   MSG: {DRAW_LOGO: "drawLogo",
@@ -124,7 +126,7 @@ tj.DigiddyDog.prototype.constants = {
   FOCUS_CELL_COLOR: "white",
   ALPHA_BLACK: "rgba(0, 0, 0, 0.5)",
   STATUS_BLACK: "rgba(0, 0, 0, 0.8)",
-  MARGIN_SCALE: 0.85,
+  MARGIN_SCALE: 0.95,
   TYPE: {PLAYER: "dog",
          GEM: "gem",
          ROCK: "rock",
@@ -147,6 +149,7 @@ tj.DigiddyDog.prototype.constants = {
   ROT_CIRCLE_COLOR: "rgba(255, 255, 0, 0.25)",
   ROT_THRESH_DOT: Math.cos(Math.PI * 15.0 / 180.0),  // 15 degree tolerance 
   FORMAT_MARGIN: 0.95,
+  RIGHT_GUI_SPACING: 2.5,
 
   DEFAULT_MAX_TYPE: 4,
   MAX_NORMAL_TILE_TYPE: 6,  // Normal tiles have indices 0-5
@@ -163,6 +166,11 @@ tj.DigiddyDog.prototype.constants = {
         DOWN: 1,
         LEFT: -1,
         RIGHT: 1},
+};
+
+tj.DigiddyDog.prototype.gameInfo = {
+  score: 0,
+  comboMultiplier: 1,
 };
 
 tj.DigiddyDog.prototype.formatLevelMessages = function() {
@@ -311,6 +319,7 @@ tj.DigiddyDog.prototype.startGame = function() {
 
   this.formatLevelMessages(this.stateLevelTest);
 
+  this.gameInfo.score = 0;
   this.game.setState(this.stateLevelTest);
 };
 
@@ -485,6 +494,7 @@ tj.DigiddyDog.prototype.drawBackBufferBackground = function(nRows, nCols) {
       left = 0,
       cellWidth = 0,
       cellHeight = 0,
+      grad = null,
       gfx = null;
 
   // Draw the default background into the grid buffer.
@@ -524,6 +534,13 @@ tj.DigiddyDog.prototype.drawBackBufferBackground = function(nRows, nCols) {
 
     gfx.closePath();
     gfx.fill();
+
+    // Depth gradient.
+    grad = gfx.createLinearGradient(0, 0, 0, this.backBuffer.height);
+    grad.addColorStop(0, "rgba(0, 0, 0, 0)");
+    grad.addColorStop(1, "rgba(0, 0, 0, 1)");
+    gfx.fillStyle = grad;
+    gfx.fillRect(0, 0, this.backBuffer.width, this.backBuffer.height);
 
     // Rotation circle.
     x = Math.round(this.backBuffer.width * 0.5);
