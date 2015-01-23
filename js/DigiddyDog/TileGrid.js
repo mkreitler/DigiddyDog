@@ -4,6 +4,21 @@ tj.DigiddyDog.TileGrid = function(levelInfo) {
 
   this.rows = [];
   this.swapRows = [];
+  this.spinRows = [
+    [null, null, null],
+    [null, null, null],
+    [null, null, null]
+  ];
+  this.cwSpinOffsets = [
+    [null,              {row: 1, col: 1},              null        ],
+    [{row: -1, col: 1},       null,               {row: 1, col: -1}],
+    [null,              {row: -1, col: -1},            null        ]
+  ];
+  this.ccwSpinOffsets = [
+    [null,              {row: 1, col: -1},             null        ],
+    [{row: 1, col: 1},        null,               {row: -1, col: -1}],
+    [null,              {row: -1, col: 1},             null        ]
+  ];
   this.cellSize = 0;
   this.gridBuffer = null;
   this.levelInfo = levelInfo;
@@ -15,6 +30,7 @@ tj.DigiddyDog.TileGrid = function(levelInfo) {
   this.patternStamp = new tj.DigiddyDog.Tile(tj.DD.constants.TYPE.GEM, 0, 0, 0, 0, 'r');
   this.moveInfo = {fromTile: null, toTile: null, elapsedTime: 0, leg: -1, path: null};
   this.rotInfo = {bWantsRotate: false, elapsedTime: 0, rotGoal: 0, rotAngle: 0};
+  this.spinInfo = {bWantsSpin: false, elapsedTime: 0, bSpinClockwise: false, spinList: [], spinRow: -1, spinCol: -1},
   this.workTiles = [];
   this.bLevelComplete = false;
   this.nextToInfo = {row: -1, col: -1, x: 0, y: 0};
@@ -73,6 +89,53 @@ tj.DigiddyDog.TileGrid.prototype.rotateBoard = function(rotDir) {
   this.rotInfo.rotGoal = rotDir === tj.DD.constants.ROTDIR.CW ? Math.PI * 0.5 : -Math.PI * 0.5;
   this.rotInfo.rotAngle = 0;
   this.rotInfo.bWantsRotate = true;
+};
+
+tj.DigiddyDog.TileGrid.prototype.spinTiles = function(row, col, bClockwise) {
+  if (this.canSpin(row, col)) {
+    this.spinInfo.bWantsSpin = true;
+    this.spinInfo.spinRow = row;
+    this.spinInfo.spinCol = col;
+
+    // Empty the current spinList.
+    this.spinInfo.spinList.length = 0;
+
+    // Push tiles to rotate into the spinList, starting at 12 o'clock and
+    // proceeding clockwise.
+    this.spinInfo.spinList.push(this.rows[row - 1][col]);
+    this.spinInfo.spinList.push(this.rows[row][col + 1]);
+    this.spinInfo.spinList.push(this.rows[row + 1][col]);
+    this.spinInfo.spinList.push(this.rows[row][col - 1]);
+
+    this.spinInfo.bSpinClockwise = bClockwise;
+    this.spinInfo.elapsedTime = 0;
+    this.spinInfo.bWantsSpin = true;
+  }
+  else {
+    this.spinInfo.bWantsSpin = false;
+  }
+
+  return this.spinInfo.bWantsSpin;
+};
+
+tj.DigiddyDog.TileGrid.prototype.canSpin = function(row, col) {
+  var numValidTiles = 0,
+      tile = null,
+      iRow = 0,
+      iCol = 0;
+
+    for (iRow=row-1; iRow>=0 && iRow<this.rows.length && iRow<=row+1; ++iRow) {
+      for (iCol=col-1; iCol>=0 && iCol<this.rows[0].length && iCol<=col+1; ++iCol) {
+        tile = this.rows[iRow][iCol].tile;
+        // For now, automatically count corner tiles as "spinable," since we won't
+        // be moving them.
+        if (Math.abs(iRow) === Math.abs(iCol) || !tile || tile.canSpin()) {
+          numValidTiles += 1;
+        }
+      }
+    }
+
+  return numValidTiles === 9;
 };
 
 tj.DigiddyDog.TileGrid.prototype.consumeGems = function(path) {
@@ -473,6 +536,10 @@ tj.DigiddyDog.TileGrid.prototype.updateDefault = function(dt) {
   if (this.bPlayerKilled) {
     tj.Game.sendMessage(tj.Game.MESSAGES.PLAYER_DIED);
   }
+  else if (this.spinInfo.bWantsSpin) {
+    tj.Game.sendMessage(tj.DD.strings.MSG.PLAY_SOUND_ROTATE);
+    this.setUpdate(this.updateSpinTiles);
+  }
   else if (this.rotInfo.bWantsRotate) {
     tj.Game.sendMessage(tj.DD.strings.MSG.PLAY_SOUND_ROTATE);
     this.setUpdate(this.updateRotateBoard);
@@ -542,6 +609,90 @@ tj.DigiddyDog.TileGrid.prototype.updateConsumeGems = function(dt) {
 
     this.setUpdate(this.nextLeg());
   };
+};
+
+tj.DigiddyDog.TileGrid.prototype.updateSpinTiles = function(dt) {
+  var param = 0,
+      maxRow = this.spinInfo.spinRow + 1,
+      maxCol = this.spinInfo.spinCol + 1,
+      targetX = 0,
+      targetY = 0,
+      dRow = 0,
+      dCol = 0,
+      curTile = null,
+      i = 0;
+
+  this.spinInfo.elapsedTime += dt;
+  param = tj.MathEx.trigTransition(Math.min(this.spinInfo.elapsedTime / tj.DD.constants.SPIN_TIME, 1.0));
+
+  if (this.spinInfo.elapsedTime < tj.DD.constants.SPIN_TIME) {
+    // Reposition board elements based on spin.
+    for (dRow=-1; dRow<=1; ++dRow) {
+      iRow = this.spinInfo.spinRow + dRow;
+      for (dCol=-1; dCol<=1; ++dCol) {
+        iCol = this.spinInfo.spinCol + dCol;
+        curTile = this.rows[iRow][iCol].tile;
+
+        if (curTile && Math.abs(dRow) !== Math.abs(dCol)) {
+          if (this.spinInfo.bSpinClockwise) {
+            targetX = this.xLocalFromCol(iCol + this.cwSpinOffsets[dRow + 1][dCol + 1].col);
+            targetY = this.yLocalFromRow(iRow + this.cwSpinOffsets[dRow + 1][dCol + 1].row);
+          }
+          else {
+            targetX = this.xLocalFromCol(iCol + this.ccwSpinOffsets[dRow + 1][dCol + 1].col);
+            targetY = this.yLocalFromRow(iRow + this.ccwSpinOffsets[dRow + 1][dCol + 1].row);
+          }
+
+          curTile.setOffset((targetX - curTile.x) * param, (targetY - curTile.y) * param); 
+        }
+      }
+    }
+  }
+  else {
+    for (dRow=-1; dRow<=1; ++dRow) {
+      iRow = this.spinInfo.spinRow + dRow;
+      for (dCol=-1; dCol<=1; ++dCol) {
+        iCol = this.spinInfo.spinCol + dCol;
+        curTile = this.rows[iRow][iCol].tile;
+
+        if (Math.abs(dRow) !== Math.abs(dCol)) {
+          if (this.spinInfo.bSpinClockwise) {
+            this.swapRows[iRow][iCol] = this.rows[iRow + this.ccwSpinOffsets[dRow + 1][dCol + 1].row]
+                                                 [iCol + this.ccwSpinOffsets[dRow + 1][dCol + 1].col];
+          }
+          else {
+            this.swapRows[iRow][iCol] = this.rows[iRow + this.cwSpinOffsets[dRow + 1][dCol + 1].row]
+                                                 [iCol + this.cwSpinOffsets[dRow + 1][dCol + 1].col];
+          }
+
+          if (curTile) {
+            curTile.setOffset((targetX - curTile.x) * param, (targetY - curTile.y) * param);
+          }
+        }
+      }
+    }
+
+    // Reinsert the spun tiles back into the game board.
+    for (dRow=-1; dRow<=1; ++dRow) {
+      iRow = this.spinInfo.spinRow + dRow;
+      for (dCol=-1; dCol<=1; ++dCol) {
+        iCol = this.spinInfo.spinCol + dCol;
+
+        if (Math.abs(dRow) !== Math.abs(dCol)) {
+          this.rows[iRow][iCol] = this.swapRows[iRow][iCol];
+          curTile = this.rows[iRow][iCol].tile;
+          if (curTile) {
+            curTile.setGridPos(iRow, iCol);
+            curTile.setOffset(0, 0);
+            curTile.setPos(this.xLocalFromCol(iCol), this.yLocalFromRow(iRow));
+          }
+        }
+      }
+    }
+
+    this.spinInfo.bWantsSpin = false;
+    this.setUpdate(this.collapse());
+  }
 };
 
 tj.DigiddyDog.TileGrid.prototype.updateRotateBoard = function(dt) {

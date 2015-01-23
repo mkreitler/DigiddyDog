@@ -3,6 +3,8 @@ tj.DigiddyDog.Tile = function(type, row, col, x, y, color) {
   this.type = type;
   this.x = x;
   this.y = y;
+  this.offsetX = 0;
+  this.offsetY = 0;
   this.color = color;
   this.dest = {row: -1, col: -1};
   this.setGridPos(row, col);
@@ -63,6 +65,11 @@ tj.DigiddyDog.Tile.prototype.isFalling = function() {
   return this.bFalling;
 };
 
+tj.DigiddyDog.Tile.prototype.setOffset = function(x, y) {
+  this.offsetX = x;
+  this.offsetY = y;
+};
+
 tj.DigiddyDog.Tile.prototype.isDisplaced = function() {
   return this.row !== this.dest.row || this.col !== this.dest.col;
 };
@@ -112,12 +119,21 @@ tj.DigiddyDog.Tile.prototype.setGridDest = function(row, col) {
   this.dest.col = col;
 };
 
+tj.DigiddyDog.Tile.prototype.canSpin = function() {
+  return this.type === tj.DD.constants.TYPE.GEM ||
+                       tj.DD.constants.TYPE.ROCK ||
+                       tj.DD.constants.TYPE.PLAYER;
+};
+
 tj.DigiddyDog.Tile.prototype.drawGem = function(gfx, cellSize) {
   var x = 0,
       y = 0,
       tileKey = null,
       srcY = 0,
       halfSize = Math.round(cellSize * 0.5);
+
+  this.x += this.offsetX;
+  this.y += this.offsetY;
 
   if (tj.DigiddyDog.TileClass.gemImages && tj.DigiddyDog.TileClass.gemImages["" + cellSize]) {
     x = this.x - halfSize;
@@ -136,6 +152,9 @@ tj.DigiddyDog.Tile.prototype.drawGem = function(gfx, cellSize) {
     gfx.closePath();
     gfx.fill();
   }
+
+  this.x -= this.offsetX;
+  this.y -= this.offsetY;
 };
 
 tj.DigiddyDog.Tile.prototype.drawDog = function(gfx, cellSize) {
@@ -144,6 +163,9 @@ tj.DigiddyDog.Tile.prototype.drawDog = function(gfx, cellSize) {
       tileKey = null,
       srcY = 0,
       halfSize = Math.round(cellSize * 0.5);
+
+  this.x += this.offsetX;
+  this.y += this.offsetY;
 
   if (tj.DigiddyDog.TileClass.playerImages && tj.DigiddyDog.TileClass.playerImages["" + cellSize]) {
     x = this.x - halfSize;
@@ -162,6 +184,9 @@ tj.DigiddyDog.Tile.prototype.drawDog = function(gfx, cellSize) {
     gfx.fill();
     gfx.stroke();
   }
+
+  this.x -= this.offsetX;
+  this.y -= this.offsetY;
 };
 
 tj.DigiddyDog.Tile.prototype.drawRock = function(gfx, cellSize) {
@@ -170,6 +195,9 @@ tj.DigiddyDog.Tile.prototype.drawRock = function(gfx, cellSize) {
       tileKey = null,
       srcY = 0,
       halfSize = Math.round(cellSize * 0.5);
+
+  this.x += this.offsetX;
+  this.y += this.offsetY;
 
   if (tj.DigiddyDog.TileClass.rockImages && tj.DigiddyDog.TileClass.rockImages["" + cellSize]) {
     x = this.x - halfSize;
@@ -191,6 +219,9 @@ tj.DigiddyDog.Tile.prototype.drawRock = function(gfx, cellSize) {
     gfx.fill();
     gfx.stroke();
   }
+
+  this.x -= this.offsetX;
+  this.y -= this.offsetY;
 };
 
 tj.DigiddyDog.Tile.prototype.drawSlab = function(gfx, cellSize) {
@@ -199,6 +230,9 @@ tj.DigiddyDog.Tile.prototype.drawSlab = function(gfx, cellSize) {
       tileKey = null,
       srcY = 0,
       halfSize = Math.round(cellSize * 0.5);
+
+  this.x += this.offsetX;
+  this.y += this.offsetY;
 
   if (tj.DigiddyDog.TileClass.rockImages && tj.DigiddyDog.TileClass.rockImages["" + cellSize]) {
     x = this.x - halfSize;
@@ -220,6 +254,9 @@ tj.DigiddyDog.Tile.prototype.drawSlab = function(gfx, cellSize) {
     gfx.fill();
     gfx.stroke();
   }
+
+  this.x -= this.offsetX;
+  this.y -= this.offsetY;
 };
 
 tj.DigiddyDog.Tile.prototype.drawFns = {gem: null, rock: null, dog: null};  // Keys MUST match tj.DD.constants.TYPE keys

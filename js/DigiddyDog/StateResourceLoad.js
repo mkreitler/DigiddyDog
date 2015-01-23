@@ -1,5 +1,5 @@
 tj.DigiddyDog.StateResourceLoad = function(gameIn) {
-  var game = gameIn;
+  this.game = gameIn;
 
   this.enter = function() {
     // Load music.
@@ -8,31 +8,31 @@ tj.DigiddyDog.StateResourceLoad = function(gameIn) {
     tj.Resources.requestMusic("art/music/theme-white");
 
     // Load images.
-    game.setBlocksImage(tj.Resources.requestImage("art/blocks.png"));
-    game.setHeadImage(tj.Resources.requestImage("art/digiddyHead.png"));
-    game.setLogoImage(tj.Resources.requestImage("art/logo.png"));
-    game.setGemImages(tj.Resources.requestImage("art/gems64.png"),
+    this.game.setBlocksImage(tj.Resources.requestImage("art/blocks.png"));
+    this.game.setHeadImage(tj.Resources.requestImage("art/digiddyHead.png"));
+    this.game.setLogoImage(tj.Resources.requestImage("art/logo.png"));
+    this.game.setGemImages(tj.Resources.requestImage("art/gems64.png"),
                        tj.Resources.requestImage("art/gems40.png"),
                        tj.Resources.requestImage("art/gems32.png"),
                        tj.Resources.requestImage("art/gems16.png"));
-    game.setPlayerImages(tj.Resources.requestImage("art/player64.png"),
+    this.game.setPlayerImages(tj.Resources.requestImage("art/player64.png"),
                        tj.Resources.requestImage("art/player40.png"),
                        tj.Resources.requestImage("art/player32.png"),
                        tj.Resources.requestImage("art/player16.png"));
-    game.setRockImages(tj.Resources.requestImage("art/rocks64.png"),
+    this.game.setRockImages(tj.Resources.requestImage("art/rocks64.png"),
                        tj.Resources.requestImage("art/rocks40.png"),
                        tj.Resources.requestImage("art/rocks32.png"),
                        tj.Resources.requestImage("art/rocks16.png"));
 
     // Load sounds.
-    game.setCollectSound(tj.Resources.requestSound("art/sounds/collected01", 2));
-    game.setFallSound(tj.Resources.requestSound("art/sounds/fall02", 1));
-    game.setInfoSound(tj.Resources.requestSound("art/sounds/info01", 1));
-    game.setInfoCloseSound(tj.Resources.requestSound("art/sounds/infoClose04", 2));
-    game.setMoveSound(tj.Resources.requestSound("art/sounds/move", 2));
-    game.setPickupSound(tj.Resources.requestSound("art/sounds/pickup01", 2));
-    game.setSquishSound(tj.Resources.requestSound("art/sounds/squish02", 2));
-    game.setRotateSound(tj.Resources.requestSound("art/sounds/rotate01", 2));
+    this.game.setCollectSound(tj.Resources.requestSound("art/sounds/collected01", 2));
+    this.game.setFallSound(tj.Resources.requestSound("art/sounds/fall02", 1));
+    this.game.setInfoSound(tj.Resources.requestSound("art/sounds/info01", 1));
+    this.game.setInfoCloseSound(tj.Resources.requestSound("art/sounds/infoClose04", 2));
+    this.game.setMoveSound(tj.Resources.requestSound("art/sounds/move", 2));
+    this.game.setPickupSound(tj.Resources.requestSound("art/sounds/pickup01", 2));
+    this.game.setSquishSound(tj.Resources.requestSound("art/sounds/squish02", 2));
+    this.game.setRotateSound(tj.Resources.requestSound("art/sounds/rotate01", 2));
 
     tj.Resources.sendRequests();
   };

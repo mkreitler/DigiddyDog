@@ -114,7 +114,7 @@ tj.DigiddyDog.prototype.constants = {
   FOCUS_CELL_COLOR: "white",
   ALPHA_BLACK: "rgba(0, 0, 0, 0.5)",
   STATUS_BLACK: "rgba(0, 0, 0, 0.8)",
-  MARGIN_SCALE: 0.85,
+  MARGIN_SCALE: 0.9,
   TYPE: {PLAYER: "dog",
          GEM: "gem",
          ROCK: "rock",
@@ -126,6 +126,7 @@ tj.DigiddyDog.prototype.constants = {
            CW: "cw"},
   ROT_THRESH_PX: 20,
   ROT_TIME: 0.3,
+  SPIN_TIME: 0.3,
   DROP_TEXT_OFFSET: 2,
   LOGO_MARGIN: 0,
   MESSAGE_WINDOW_WIDTH_FACTOR: 6.0 / 8.0,
@@ -144,6 +145,7 @@ tj.DigiddyDog.prototype.constants = {
   BORDER_WIDTH: 4,
   MAX_SPEED: 4,     // MUST equal MAX_CELLS_PER_PATH
   DEFAULT_MOVE_TIME_MS: 500,
+  DOUBLE_TAP_INTERVAL: 250, // ms
   MIN_DRAG_TIME_MS: 50,
   BACKGROUND_CELL_FACTOR: 3,
   DIR: {UNKNOWN: 99,
