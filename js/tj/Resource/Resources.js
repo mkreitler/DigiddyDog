@@ -27,7 +27,8 @@ tj.ResourcesClass = function() {
 
 tj.ResourcesClass.prototype.TYPES = {SOUND: 0,
                                      MUSIC: 1,
-                                     IMAGE: 2};
+                                     IMAGE: 2,
+                                     FONT: 3};
 
 tj.ResourcesClass.prototype.getProgress = function() {
   return this.requests.length ? (this.loaded + this.failed) / this.requests.length : 1.0;
@@ -42,6 +43,14 @@ tj.ResourcesClass.prototype.removeRequest = function(resource) {
       break;
     }
   }
+};
+
+tj.ResourcesClass.prototype.onBitmapFontLoaded = function(resource) {
+  this.removeRequest(resource);
+};
+
+tj.ResourcesClass.prototype.onBitmapFontLoadFailed = function(resource) {
+  this.failed += 1;
 };
 
 tj.ResourcesClass.prototype.onSoundLoaded = function(resource) {
@@ -86,6 +95,10 @@ tj.ResourcesClass.prototype.sendRequests = function() {
         this.requests[i].resource.load(this.onImageLoaded, this.onImageLoadFailed, this);
       break;
 
+      case this.TYPES.FONT:
+        this.requests[i].resource.load(this.onBitmapFontLoaded, this.onBitmapFontLoadfailed, this);
+      break;
+
       default:
       break;
     }
@@ -102,6 +115,19 @@ tj.ResourcesClass.prototype.loadSuccessful = function() {
 
 tj.ResourcesClass.prototype.flushRequests = function() {
   this.requests.length = 0;
+};
+
+tj.ResourcesClass.prototype.requestFont = function(url) {
+  var request = {resource: new tj.BitmapFont(url),
+                 bSent: false,
+                 bReceived: false,
+                 bLoaded: false,
+                 bError: false,
+                 type: this.TYPES.FONT};
+
+  this.requests.push(request);
+
+  return request.resource;
 };
 
 tj.ResourcesClass.prototype.requestSound = function(url, nChannels) {

@@ -39,6 +39,7 @@ tj.DigiddyDog.TileGrid = function(levelInfo) {
   this.nCols = 0;
   this.bPlayCollapseSound = true;
   this.bPlayerKilled = true;
+  this.drawMetrics = {x:0, y:0, w:0, h:0, cellSize: 0, top: 0};
 
   // setUpdate must precede buildLevel because build level causes a
   // context shift in the main state that setUpdate undoes.
@@ -325,7 +326,7 @@ tj.DigiddyDog.TileGrid.prototype.isNextToPlayer = function(row, col) {
 
 tj.DigiddyDog.TileGrid.prototype.draw = function(gfx) {
   if (gfx && this.gridBuffer) {
-    this.drawGridBuffer();
+    this.drawGridBuffer(this.rotInfo.bWantsRotate, this.rotInfo.rotAngle);
 
     gfx.translate(this.origin.x, this.origin.y);
     if (this.rotInfo.bWantsRotate) {
@@ -341,6 +342,66 @@ tj.DigiddyDog.TileGrid.prototype.draw = function(gfx) {
   }
 };
 
+tj.DigiddyDog.TileGrid.prototype.drawRightGUI = function(gfx, right, top) {
+  var metrics = null;
+
+  metrics = this.drawPattern(gfx, right, top);
+
+  metrics = this.drawScore(gfx, metrics);
+
+  metrics = this.drawCombo(gfx, metrics);
+};
+
+tj.DigiddyDog.TileGrid.prototype.drawCombo = function(gfx, metrics) {
+  metrics.y = Math.round(metrics.top + 2 * tj.DD.constants.RIGHT_GUI_SPACING * metrics.cellSize);
+  
+  gfx.fillStyle = tj.DD.constants.ALPHA_BLACK;
+  gfx.strokeStyle = "white";
+  gfx.lineWidth = Math.round(tj.DD.constants.BORDER_WIDTH * 0.5);
+  gfx.beginPath();
+  gfx.rect(metrics.x, metrics.y, metrics.w, metrics.h);
+  gfx.closePath();
+  gfx.fill();
+  gfx.stroke();
+
+  tj.DD.printMedium(gfx,
+                    tj.DD.strings.COMBO,
+                    Math.round(metrics.x + metrics.w * 0.5),
+                    Math.round(metrics.y + metrics.cellSize * 0.5));
+
+  tj.DD.printMedium(gfx,
+                    "x" + tj.DD.gameInfo.comboMultiplier,
+                    Math.round(metrics.x + metrics.w * 0.5),
+                    Math.round(metrics.y + metrics.cellSize * 1.5));
+
+  return this.drawMetrics;
+};
+
+tj.DigiddyDog.TileGrid.prototype.drawScore = function(gfx, metrics) {
+  metrics.y = Math.round(metrics.top + 0 * tj.DD.constants.RIGHT_GUI_SPACING * metrics.cellSize);
+
+  gfx.fillStyle = tj.DD.constants.ALPHA_BLACK;
+  gfx.strokeStyle = "white";
+  gfx.lineWidth = Math.round(tj.DD.constants.BORDER_WIDTH * 0.5);
+  gfx.beginPath();
+  gfx.rect(metrics.x, metrics.y, metrics.w, metrics.h);
+  gfx.closePath();
+  gfx.fill();
+  gfx.stroke();
+
+  tj.DD.printMedium(gfx,
+                    tj.DD.strings.SCORE,
+                    Math.round(metrics.x + metrics.w * 0.5),
+                    Math.round(metrics.y + metrics.cellSize * 0.5));
+
+  tj.DD.printMedium(gfx,
+                    "" + tj.DD.gameInfo.score,
+                    Math.round(metrics.x + metrics.w * 0.5),
+                    Math.round(metrics.y + metrics.cellSize * 1.5));
+
+  return this.drawMetrics;
+};
+
 tj.DigiddyDog.TileGrid.prototype.drawPattern = function(gfx, right, top) {
   var i = 0,
       x = right,
@@ -349,11 +410,14 @@ tj.DigiddyDog.TileGrid.prototype.drawPattern = function(gfx, right, top) {
       cellSize = this.computeCellSize(width / this.pattern.length),
       left = right - width;
 
+  y = Math.round(top + 1 * tj.DD.constants.RIGHT_GUI_SPACING * cellSize);
   x -= Math.round(cellSize * this.pattern.length + tj.DD.constants.BORDER_WIDTH);
   width = cellSize * this.pattern.length;
 
+  this.drawMetrics.cellSize = cellSize;
+
   if (gfx && this.pattern) {
-    gfx.fillStyle = "rgba(0, 0, 0, 0.5)";
+    gfx.fillStyle = tj.DD.constants.ALPHA_BLACK;
     gfx.strokeStyle = "white";
     gfx.lineWidth = Math.round(tj.DD.constants.BORDER_WIDTH * 0.5);
     gfx.beginPath();
@@ -362,8 +426,13 @@ tj.DigiddyDog.TileGrid.prototype.drawPattern = function(gfx, right, top) {
     gfx.fill();
     gfx.stroke();
 
+    this.drawMetrics.x = x;
+    this.drawMetrics.w = width;
+    this.drawMetrics.h = 2 * cellSize;
+
     y += Math.round(cellSize * 0.33);
-    tj.Graphics.print(gfx, tj.DD.strings.PATTERN, x + Math.round(width * 0.5), y, "white", tj.DD.constants.DROP_TEXT_OFFSET);
+//    tj.Graphics.print(gfx, tj.DD.strings.PATTERN, x + Math.round(width * 0.5), y, "white", tj.DD.constants.DROP_TEXT_OFFSET);
+    tj.DD.printMedium(gfx, tj.DD.strings.PATTERN, x + Math.round(width * 0.5), y);
     y += cellSize;
     x += Math.round(cellSize * 0.5);
 
@@ -373,10 +442,14 @@ tj.DigiddyDog.TileGrid.prototype.drawPattern = function(gfx, right, top) {
       this.patternStamp.draw(gfx, cellSize);
       x += cellSize;
     }
+
+    this.drawMetrics.top = top;
   }
+
+  return this.drawMetrics;
 };
 
-tj.DigiddyDog.TileGrid.prototype.drawGridBuffer = function() {
+tj.DigiddyDog.TileGrid.prototype.drawGridBuffer = function(bWantsRotate, rotAngle) {
   var gfx = this.gridBuffer.getContext('2d'),
       iRow = 0,
       iCol = 0,
@@ -455,7 +528,7 @@ tj.DigiddyDog.TileGrid.prototype.buildLevel = function(levelInfo) {
   bRandomLevel = this.levelInfo ? this.levelInfo.bRandomLevel || false : true;
   nSolidRocks = this.levelInfo ? this.levelInfo.solidRocks || 0 : 0;
 
-  if (this.levelInfo && this.levelInfo.messages && this.levelInfo.messages.length > 0) {
+  if (this.levelInfo && this.levelInfo.messages) {
     this.levelStatusIndex = 1;
     statusMessage = this.levelInfo.messages[0];
   }

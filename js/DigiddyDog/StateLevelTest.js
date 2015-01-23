@@ -158,7 +158,7 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
       this.drawGrid(gfx, this.backBuffer);
       this.tileGrid.draw(gfx);
 
-      this.drawPattern(gfx);
+      this.drawRightGUI(gfx);
 
       if (this.focusCell.bActive) {
         this.drawFocusCell(gfx);
@@ -169,7 +169,7 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
       }
 
       if (this.statusMessage.length > 0) {
-        this.showStatusMessage(gfx);
+        this.drawStatusMessage(gfx);
       }
 
       tj.Game.sendMessage(tj.DD.strings.MSG.DRAW_LOGO, gfx);
@@ -190,7 +190,7 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
     return this.statusBoxBounds;
   };
 
-  this.showStatusMessage = function(gfx) {
+  this.drawStatusMessage = function(gfx) {
     var origin = this.tileGrid ? this.tileGrid.getOrigin() : null,
         msgBoxBounds = this.getStatusBoxBounds(),
         x = msgBoxBounds.x,
@@ -212,7 +212,7 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
       gfx.fill();
       gfx.stroke();
 
-      tj.Graphics.print(gfx, this.statusMessage[0], origin.x, y + Math.round(h * 0.5), "white", tj.DD.constants.DROP_TEXT_OFFSET);
+      tj.DD.printMedium(gfx, this.statusMessage[0], x + Math.round(w * 0.5), y + Math.round(h * 0.5));
     }
   };
 
@@ -263,6 +263,12 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
   this.drawPattern = function(gfx) {
     if (this.tileGrid && gfx) {
       this.tileGrid.drawPattern(gfx, Math.round(tj.Graphics.width() * tj.DD.constants.MARGIN_SCALE), Math.round(tj.Graphics.height() * (1.0 - tj.DD.constants.MARGIN_SCALE)));
+    }
+  };
+
+  this.drawRightGUI = function(gfx) {
+    if (this.tileGrid && gfx) {
+      this.tileGrid.drawRightGUI(gfx, Math.round(tj.Graphics.width() * tj.DD.constants.MARGIN_SCALE), Math.round(tj.Graphics.height() * (1.0 - tj.DD.constants.MARGIN_SCALE)));
     }
   };
 
@@ -512,6 +518,8 @@ tj.DigiddyDog.StateLevelTest = function(gameIn, statusMsgAnchorIn) {
     this.rotInfo.bWantsRot = false;
     this.bWillRot = false;
     this.rotInfo.willRotDir = null;
+    this.pathStart.row = -1;
+    this.pathStart.col = -1;
 
     // TODO: check that the player hasn't selected an occupied spot.
     centerX = this.gridTopLeft.x + cellSize * this.tileGrid.getNumCols() * 0.5;

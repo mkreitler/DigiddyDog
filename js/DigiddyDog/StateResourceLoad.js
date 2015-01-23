@@ -24,6 +24,11 @@ tj.DigiddyDog.StateResourceLoad = function(gameIn) {
                        tj.Resources.requestImage("art/rocks32.png"),
                        tj.Resources.requestImage("art/rocks16.png"));
 
+    // Load fonts.
+    this.game.setFontLarge(tj.Resources.requestFont("art/font_white64.png"));
+    this.game.setFontMedium(tj.Resources.requestFont("art/font_white32.png"));
+    this.game.setFontSmall(tj.Resources.requestFont("art/font_white20.png"));
+
     // Load sounds.
     this.game.setCollectSound(tj.Resources.requestSound("art/sounds/collected01", 2));
     this.game.setFallSound(tj.Resources.requestSound("art/sounds/fall02", 1));
